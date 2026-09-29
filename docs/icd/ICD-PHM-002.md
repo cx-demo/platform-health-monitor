@@ -187,6 +187,7 @@ These risks remain after rev D. Each is **pending acceptance by @pedric1**
 | RR-1 | A `null`, NaN or −infinity temperature cannot detect overheating. A subsystem that is actually at or above 90.0 °C but reports no usable reading is classified `PMC`, not `NMC`. | Rule 6: `PMC`, `readinessConfidence` `LOW`; temperature published as `null`. | Pending @pedric1 |
 | RR-2 | `PHM-RDY-1` may diverge from the SYS-4400 contracted availability definition. | Alignment unverified; thresholds synthetic. | Pending @pedric1 |
 | RR-3 | An unreported or malformed `operational` flag is published as `false` while the platform is classified `PMC` by rule 6. A consumer re-deriving readiness from the published flag would reach `NMC`. | Published `false`; `readinessState` `PMC` with `readinessConfidence` `LOW` unless an earlier rule matches. | Pending @pedric1 |
+| RR-4 | A malformed mission-critical fault flag (for example `0`, `1`, `"yes"` or `"false"`) is held as unreported, not as a fault. A subsystem that actually has a mission-critical fault but reports a malformed flag is classified `PMC`, not `NMC`. | Rule 6: `PMC`, `readinessConfidence` `LOW` unless an earlier rule matches. | Pending @pedric1 |
 
 ## Excluded from the interface
 

@@ -264,11 +264,7 @@ def test_rule_6_missing_nan_or_minus_inf_temperature_is_pmc_low(temperature):
     assert (result.state, result.confidence) == (PMC, LOW)
 
 
-@pytest.mark.parametrize(
-    "temperature",
-    [math.inf, "inf", "Infinity"],
-    ids=["float-inf", "string-inf", "string-infinity"],
-)
+@pytest.mark.parametrize("temperature", [math.inf], ids=["float-inf"])
 def test_rule_2_plus_inf_temperature_is_nmc_low(temperature):
     subsystem = Subsystem.model_validate(
         {
@@ -337,6 +333,151 @@ def test_rule_6_malformed_telemetry_is_pmc_low(overrides):
     result = _classify(_sub("A"), _malformed_sub(**overrides))
 
     assert (result.state, result.confidence) == (PMC, LOW)
+
+
+# Malformed temperature and age, through normal model validation.
+
+_VALID_SUBSYSTEM = {
+    "subsystem_id": "S-01",
+    "name": "Subsystem",
+    "temperature_celsius": 50.0,
+    "operational": True,
+    "mission_critical_fault": False,
+    "telemetry_age_seconds": 0,
+}
+
+_MALFORMED_TEMPERATURES = [
+    True, False, "85.0", "95", "50", "inf", "Infinity", "nan", "", "hot", [], {},
+]
+_MALFORMED_TEMPERATURE_IDS = [
+    "bool-true", "bool-false", "str-85.0", "str-95", "str-50", "str-inf",
+    "str-infinity", "str-nan", "empty-str", "str-hot", "list", "dict",
+]
+_MALFORMED_AGES = [
+    True, False, "10", "0", "10.0", "", "recent", 10.5, math.nan,
+    math.inf, -math.inf, [], {},
+]
+_MALFORMED_AGE_IDS = [
+    "bool-true", "bool-false", "str-10", "str-0", "str-10.0", "empty-str",
+    "str-recent", "float-10.5", "float-nan", "float-inf", "float-minus-inf",
+    "list", "dict",
+]
+
+
+@pytest.mark.parametrize(
+    "value", _MALFORMED_TEMPERATURES, ids=_MALFORMED_TEMPERATURE_IDS
+)
+def test_malformed_temperature_is_not_coerced_by_validation(value):
+    subsystem = Subsystem.model_validate(
+        {**_VALID_SUBSYSTEM, "temperature_celsius": value}
+    )
+    result = _classify(_sub("A"), subsystem)
+
+    assert subsystem.temperature_celsius is None
+    assert result.state is not FMC
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+@pytest.mark.parametrize("value", _MALFORMED_AGES, ids=_MALFORMED_AGE_IDS)
+def test_malformed_age_is_not_coerced_by_validation(value):
+    subsystem = Subsystem.model_validate(
+        {**_VALID_SUBSYSTEM, "telemetry_age_seconds": value}
+    )
+    result = _classify(_sub("A"), subsystem)
+
+    assert subsystem.telemetry_age_seconds is None
+    assert result.state is not FMC
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("temperature_celsius", True),
+        ("temperature_celsius", "85.0"),
+        ("telemetry_age_seconds", True),
+        ("telemetry_age_seconds", "10"),
+    ],
+    ids=["temperature-bool", "temperature-str", "age-bool", "age-str"],
+)
+def test_malformed_temperature_or_age_via_platform_validation_is_pmc_low(
+    field, value
+):
+    platform = Platform.model_validate(
+        {
+            "platform_id": "TST-003",
+            "designation": "Test Platform 003",
+            "platform_type": "LAND",
+            "operational": True,
+            "subsystems": [{**_VALID_SUBSYSTEM, field: value}],
+        }
+    )
+
+    result = classify_readiness(platform)
+    summary = get_platform_summary(platform)
+
+    assert getattr(platform.subsystems[0], field) is None
+    assert (result.state, result.confidence) == (PMC, LOW)
+    assert (summary["readinessState"], summary["readinessConfidence"]) == (
+        "PMC",
+        "LOW",
+    )
+
+
+def test_malformed_temperature_with_real_fault_elsewhere_is_nmc_low():
+    malformed = Subsystem.model_validate(
+        {**_VALID_SUBSYSTEM, "temperature_celsius": "95"}
+    )
+
+    result = _classify(_sub("A", mission_critical_fault=True), malformed)
+
+    assert (result.state, result.confidence) == (NMC, LOW)
+
+
+@pytest.mark.parametrize(
+    ("temperature", "age"),
+    [
+        (50.0, 10),
+        (50, 10),
+        (50.0, 0),
+        (50.0, 10.0),
+        (69.9, STALE_TELEMETRY_AGE_SECONDS - 1),
+    ],
+    ids=[
+        "float-50.0-int-10",
+        "int-50-int-10",
+        "float-50.0-int-0",
+        "float-50.0-whole-float-10.0",
+        "boundary",
+    ],
+)
+def test_real_number_temperature_and_age_are_valid(temperature, age):
+    subsystem = Subsystem.model_validate(
+        {
+            **_VALID_SUBSYSTEM,
+            "temperature_celsius": temperature,
+            "telemetry_age_seconds": age,
+        }
+    )
+    result = _classify(subsystem)
+
+    assert subsystem.temperature_celsius == float(temperature)
+    assert isinstance(subsystem.temperature_celsius, float)
+    assert subsystem.telemetry_age_seconds == age
+    assert type(subsystem.telemetry_age_seconds) is int
+    assert (result.state, result.confidence) == (FMC, HIGH)
+
+
+def test_whole_float_stale_age_is_still_stale():
+    subsystem = Subsystem.model_validate(
+        {**_VALID_SUBSYSTEM, "telemetry_age_seconds": 300.0}
+    )
+
+    assert subsystem.telemetry_age_seconds == STALE_TELEMETRY_AGE_SECONDS
+    assert (_classify(subsystem).state, _classify(subsystem).confidence) == (
+        PMC,
+        LOW,
+    )
 
 
 def test_rule_6_no_subsystems_is_pmc_low():

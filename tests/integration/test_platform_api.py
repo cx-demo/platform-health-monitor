@@ -273,3 +273,49 @@ def test_non_boolean_subsystem_flag_is_published_as_pmc_low(monkeypatch, flag, v
     assert body["subsystems"][0]["operational"] is (flag != "operational")
     for marker in LEAK_MARKERS:
         assert marker not in detail.text
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("temperature_celsius", True),
+        ("temperature_celsius", "95"),
+        ("temperature_celsius", "inf"),
+        ("telemetry_age_seconds", False),
+        ("telemetry_age_seconds", "10"),
+    ],
+    ids=["temp-bool", "temp-str-95", "temp-str-inf", "age-bool", "age-str-10"],
+)
+def test_malformed_temperature_or_age_is_published_as_pmc_low(monkeypatch, field, value):
+    record = {
+        "subsystem_id": "PWR-01",
+        "name": "Powerpack",
+        "temperature_celsius": 55.0,
+        "operational": True,
+        "mission_critical_fault": False,
+        "telemetry_age_seconds": 0,
+        field: value,
+    }
+    platform = Platform.model_validate(
+        {
+            "platform_id": "TST-903",
+            "designation": "Test Platform 903",
+            "platform_type": "LAND",
+            "operational": True,
+            "subsystems": [record],
+        }
+    )
+    monkeypatch.setattr(src.main, "get_platform", lambda _id: platform)
+    monkeypatch.setattr(src.main, "list_platforms", lambda: [platform])
+
+    detail = client.get("/platforms/TST-903")
+    listed = client.get("/platforms")
+
+    assert detail.status_code == 200
+    assert listed.json() == [detail.json()]
+    body = detail.json()
+    assert (body["readinessState"], body["readinessConfidence"]) == ("PMC", "LOW")
+    expected_temperature = None if field == "temperature_celsius" else 55.0
+    assert body["subsystems"][0]["temperatureCelsius"] == expected_temperature
+    for marker in LEAK_MARKERS:
+        assert marker not in detail.text
