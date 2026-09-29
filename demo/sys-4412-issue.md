@@ -18,7 +18,7 @@ subsystem telemetry using a single authoritative classification rule.
 ## Source analysis (Microsoft 365 Copilot)
 
 Synthesised from the fleet availability working group pack, ICD-PHM-002 rev C,
-the sustainment operational concept and the open risk log.
+the sustainment operational concept and identified risks recorded in this issue.
 
 **Driver.** Four downstream consumers — maintenance planning, sortie generation,
 availability reporting and the customer sustainment portal — each implement
@@ -50,8 +50,9 @@ this requirement, and the resulting evidence must be auditable.
 7. Interface change assessed; ICD revised if the payload shape changes.
 8. Unit, integration and contract tests pass without modification to existing
    assertions.
-9. Requirement-to-test traceability recorded.
-10. Residual risks recorded and accepted by a named engineering authority.
+9. Requirement-to-test coverage and evidence linked in the issue or pull request.
+10. Residual risks recorded in the issue or pull request and accepted by a named
+    engineering authority.
 
 ## Risks identified during analysis
 
@@ -65,5 +66,5 @@ this requirement, and the resulting evidence must be auditable.
 - [ ] Independent verification complete
 - [ ] Safety and security review complete
 - [ ] Interface change assessed and ICD revised if required
-- [ ] Traceability matrix updated
+- [ ] Requirement-to-test coverage and evidence linked in the issue or pull request
 - [ ] Residual risk accepted by named engineering authority

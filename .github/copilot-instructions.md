@@ -34,10 +34,11 @@
 ## Traceability
 
 - Every change must reference its requirement ID.
-- Update docs/traceability-matrix.md when requirement coverage changes.
+- Record requirement-to-test coverage in the issue or pull request.
 - Update docs/icd/ICD-PHM-002.md when the public API changes.
-- Update docs/risk-register.md when a change introduces material risk.
-- Write session evidence to docs/evidence/ as committed files, not chat output.
+- Record material risks and named human acceptance in the issue or pull request.
+- Record decisions, agent context summaries and evidence links in the issue or
+  pull request, not only in session chat.
 
 ## Evidence discipline
 

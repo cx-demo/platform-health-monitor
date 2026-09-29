@@ -46,7 +46,8 @@ can build against and that no single team may change unilaterally.
 - The published summary is a deliberate **projection** of the internal model. `Subsystem` carries
   `mission_critical_fault` and `telemetry_age_seconds`; `get_platform_summary` omits both.
 - Change is governed. Work is traced by `SYS-NNNN` requirement IDs. Every pull request must carry
-  a requirement ID, update `docs/traceability-matrix.md`, and leave evidence in `docs/evidence/`.
+  a requirement ID. Requirement-to-test coverage, risks and evidence links are recorded in the
+  issue or pull request for human review.
   `main` is protected by an active ruleset; code ownership is split so that `/docs/icd/` and
   `/tests/contract/` sit with the interface-control board.
 - `tests/contract/test_icd_phm_002_compatibility.py` asserts the ICD-PHM-002 revision C field set
@@ -90,9 +91,9 @@ in `src/main.py`. Platform and subsystem identifiers are fixed vocabulary and ap
 
 - Real fleet data in `src/repository.py` — synthetic for demonstration, but it is the only fleet
   this product has, and it is authored, not placeholder.
-- Controlled documents: `docs/icd/ICD-PHM-002.md` (revision C), `docs/architecture.md`,
-  `docs/risk-register.md`, `docs/traceability-matrix.md`, `docs/evidence/sys-4400-baseline.md`.
-- Open requirement: `requirements/SYS-4412-readiness-state.md`.
+- Interface and architecture documents: `docs/icd/ICD-PHM-002.md` (revision C),
+  `docs/architecture.md`.
+- Engineering change request: `demo/sys-4412-issue.md`.
 
 No customers, benchmarks, deployment claims, pricing or certifications exist. None may be
 invented — including implied ones such as fake timestamps presented as live telemetry, airfield
