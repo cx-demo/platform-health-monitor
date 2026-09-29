@@ -319,3 +319,44 @@ def test_malformed_temperature_or_age_is_published_as_pmc_low(monkeypatch, field
     assert body["subsystems"][0]["temperatureCelsius"] == expected_temperature
     for marker in LEAK_MARKERS:
         assert marker not in detail.text
+
+
+@pytest.mark.parametrize(
+    "age", [10**400, -(10**400)], ids=["int-10**400", "int-minus-10**400"]
+)
+def test_oversized_int_age_is_published_as_pmc_low(monkeypatch, age):
+    # SYS-4412: an integer age too large to compare safely is malformed
+    # telemetry, never a server error.
+    platform = Platform.model_validate(
+        {
+            "platform_id": "TST-904",
+            "designation": "Test Platform 904",
+            "platform_type": "LAND",
+            "operational": True,
+            "subsystems": [
+                {
+                    "subsystem_id": "PWR-01",
+                    "name": "Powerpack",
+                    "temperature_celsius": 55.0,
+                    "operational": True,
+                    "mission_critical_fault": False,
+                    "telemetry_age_seconds": age,
+                }
+            ],
+        }
+    )
+    monkeypatch.setattr(src.main, "get_platform", lambda _id: platform)
+    monkeypatch.setattr(src.main, "list_platforms", lambda: [platform])
+
+    detail = client.get("/platforms/TST-904")
+    listed = client.get("/platforms")
+
+    assert detail.status_code == 200
+    assert listed.status_code == 200
+    assert listed.json() == [detail.json()]
+    body = detail.json()
+    assert (body["readinessState"], body["readinessConfidence"]) == ("PMC", "LOW")
+    assert body["subsystems"][0]["temperatureCelsius"] == 55.0
+    for marker in LEAK_MARKERS:
+        assert marker not in detail.text
+        assert marker not in listed.text

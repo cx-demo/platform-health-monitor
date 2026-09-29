@@ -42,7 +42,15 @@ def _has_bad_telemetry(subsystem: Subsystem) -> bool:
     if not isinstance(subsystem.mission_critical_fault, bool):
         return True
     age = subsystem.telemetry_age_seconds
-    if not _is_number(age) or not math.isfinite(age) or age < 0:
+    if not _is_number(age):
+        return True
+    try:
+        if not math.isfinite(age):
+            return True
+    except OverflowError:
+        # An int too large to convert to a float is malformed, never an error.
+        return True
+    if age < 0:
         return True
     return age >= STALE_TELEMETRY_AGE_SECONDS
 

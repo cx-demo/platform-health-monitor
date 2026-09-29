@@ -480,6 +480,54 @@ def test_whole_float_stale_age_is_still_stale():
     )
 
 
+# SYS-4412: an integer age too large to convert to a float is malformed.
+
+_OVERSIZED_AGES = [10**400, -(10**400)]
+_OVERSIZED_AGE_IDS = ["int-10**400", "int-minus-10**400"]
+
+
+@pytest.mark.parametrize("value", _OVERSIZED_AGES, ids=_OVERSIZED_AGE_IDS)
+def test_oversized_int_age_via_model_validate_is_malformed_pmc_low(value):
+    platform = Platform.model_validate(
+        {
+            "platform_id": "TST-004",
+            "designation": "Test Platform 004",
+            "platform_type": "LAND",
+            "operational": True,
+            "subsystems": [{**_VALID_SUBSYSTEM, "telemetry_age_seconds": value}],
+        }
+    )
+
+    result = classify_readiness(platform)
+    summary = get_platform_summary(platform)
+
+    assert platform.subsystems[0].telemetry_age_seconds is None
+    assert (result.state, result.confidence) == (PMC, LOW)
+    assert (summary["readinessState"], summary["readinessConfidence"]) == (
+        "PMC",
+        "LOW",
+    )
+
+
+@pytest.mark.parametrize("value", _OVERSIZED_AGES, ids=_OVERSIZED_AGE_IDS)
+def test_oversized_int_age_reaching_classifier_is_pmc_low_not_an_error(value):
+    result = _classify(_malformed_sub(telemetry_age_seconds=value))
+
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+def test_large_float_convertible_int_age_is_kept_and_stale():
+    subsystem = Subsystem.model_validate(
+        {**_VALID_SUBSYSTEM, "telemetry_age_seconds": 10**300}
+    )
+
+    assert subsystem.telemetry_age_seconds == 10**300
+    assert (_classify(subsystem).state, _classify(subsystem).confidence) == (
+        PMC,
+        LOW,
+    )
+
+
 def test_rule_6_no_subsystems_is_pmc_low():
     result = _classify()
 

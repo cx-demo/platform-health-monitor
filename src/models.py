@@ -24,10 +24,15 @@ def _untrusted_temperature_to_none(value: object) -> object:
 def _untrusted_age_to_none(value: object) -> object:
     # SYS-4412: an age is a real number of whole seconds. An int, or a float
     # holding a finite whole number (10.0), is kept. A bool, string, fractional
-    # or non-finite float is malformed telemetry, held as None, never coerced.
+    # or non-finite float, or an int too large to convert to a float (10**400),
+    # is malformed telemetry, held as None, never coerced.
     if isinstance(value, bool):
         return None
     if isinstance(value, int):
+        try:
+            float(value)
+        except OverflowError:
+            return None
         return value
     if isinstance(value, float) and math.isfinite(value) and value.is_integer():
         return int(value)

@@ -150,11 +150,27 @@ Definitions:
   above 90.0 °C, so rule 2 applies (`NMC`). NaN and −infinity carry no usable
   reading and fall to rule 6 (`PMC`). All three give `readinessConfidence`
   `LOW`.
-- **Malformed** — a temperature or telemetry age that is not a number, a
-  negative telemetry age, or a platform or subsystem fault or operational flag
-  that is not a real boolean (for example `0`, `1`, `"yes"` or `"false"`). A
-  non-boolean flag is never coerced to `true` or `false`; it is held as
-  unreported and can match only rule 6.
+- **Malformed** — any of the following. A malformed value is never coerced;
+  it is held as unreported and can match only rule 6.
+  - A temperature that is not a real integer or floating-point number. A
+    boolean (`true`, `false`) or a string (for example `"85.0"`, `"95"` or
+    `"inf"`) is malformed and is published as `null`.
+  - A telemetry age that is:
+    - a boolean (`true`, `false`);
+    - a string, even one holding a number (for example `"10"` or `"10.0"`);
+    - a fractional number (for example `10.5`);
+    - a non-finite number (NaN, +infinity or −infinity);
+    - an integer too large to convert to a floating-point number (out of
+      range, for example 10^400 or −10^400);
+    - negative;
+    - any other non-numeric value.
+
+    An integer age is used as given. A floating-point age holding a finite
+    whole number (for example `10.0` or `300.0`) is used as that whole number
+    of seconds, so `300.0` is stale.
+  - A platform or subsystem fault or operational flag that is not a real
+    boolean (for example `0`, `1`, `"yes"` or `"false"`). It is never coerced
+    to `true` or `false`.
 - **Stale** — telemetry age of **300 seconds or more**. A reading exactly
   300 seconds old is stale.
 
@@ -184,7 +200,7 @@ These risks remain after rev D. Each is **pending acceptance by @pedric1**
 
 | ID | Risk | Behaviour at rev D | Acceptance |
 |---|---|---|---|
-| RR-1 | A `null`, NaN or −infinity temperature cannot detect overheating. A subsystem that is actually at or above 90.0 °C but reports no usable reading is classified `PMC`, not `NMC`. | Rule 6: `PMC`, `readinessConfidence` `LOW`; temperature published as `null`. | Pending @pedric1 |
+| RR-1 | A `null`, NaN or −infinity temperature, or a malformed temperature such as a string (for example `"95"` or `"inf"`) or a boolean, cannot detect overheating. A subsystem that is actually at or above 90.0 °C but reports no usable reading, or a malformed one, is classified `PMC`, not `NMC`. | Rule 6: `PMC`, `readinessConfidence` `LOW` unless an earlier rule matches; temperature published as `null`. | Pending @pedric1 |
 | RR-2 | `PHM-RDY-1` may diverge from the SYS-4400 contracted availability definition. | Alignment unverified; thresholds synthetic. | Pending @pedric1 |
 | RR-3 | An unreported or malformed `operational` flag is published as `false` while the platform is classified `PMC` by rule 6. A consumer re-deriving readiness from the published flag would reach `NMC`. | Published `false`; `readinessState` `PMC` with `readinessConfidence` `LOW` unless an earlier rule matches. | Pending @pedric1 |
 | RR-4 | A malformed mission-critical fault flag (for example `0`, `1`, `"yes"` or `"false"`) is held as unreported, not as a fault. A subsystem that actually has a mission-critical fault but reports a malformed flag is classified `PMC`, not `NMC`. | Rule 6: `PMC`, `readinessConfidence` `LOW` unless an earlier rule matches. | Pending @pedric1 |
