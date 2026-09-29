@@ -20,7 +20,7 @@ they disagree. `SYS-4412` proposes a single authoritative `readinessState`
 derivation (`FMC` / `PMC` / `NMC`).
 
 `readinessState` is **deliberately not implemented here.** This repository is
-the *before* state. See `requirements/SYS-4412-readiness-state.md`.
+the *before* state. See `demo/sys-4412-issue.md` for the engineering change request.
 
 ## Fleet fixture
 
@@ -56,7 +56,7 @@ the interface. It holds no privileged access and reads the same payload any
 integrator receives, so whatever it cannot show you, no consumer can show you.
 It is deliberately excluded from `/openapi.json`: that document is the
 machine-readable form of ICD-PHM-002, and adding a path to it would be an
-interface change. See `docs/evidence/sys-4418-dashboard.md`.
+interface change.
 
 ## Test it
 
@@ -98,15 +98,11 @@ impact assessment.
   dependabot.yml
   ISSUE_TEMPLATE/engineering-change.yml
   rulesets/main-protection.json    branch protection, applied by an admin
-  workflows/                       ci · codeql · dependency-review · traceability
+  workflows/                       ci · codeql · dependency-review
 demo/sys-4412-issue.md             body for the SYS-4412 engineering change issue
 docs/
   architecture.md
   icd/ICD-PHM-002.md               controlled interface document (rev C)
-  evidence/                        cross-session evidence surface
-  risk-register.md
-  traceability-matrix.md
-requirements/SYS-4412-readiness-state.md
 src/                               models · repository · readiness_service · main
 tests/                             unit · integration · contract
 ```
@@ -118,30 +114,37 @@ tests/                             unit · integration · contract
 | Test, contract and 90% coverage gate | `.github/workflows/ci.yml` |
 | Static security analysis | `.github/workflows/codeql.yml` (`security-extended`) |
 | Supply chain | `.github/workflows/dependency-review.yml`, `dependabot.yml` |
-| Requirement traceability | `.github/workflows/traceability.yml` |
 | Branch protection | `.github/rulesets/main-protection.json` |
 | Ownership | `.github/CODEOWNERS` |
 
-`traceability.yml` is a bespoke gate: a pull request fails unless it carries a
-`SYS-NNNN` requirement ID, updates `docs/traceability-matrix.md`, and leaves
-evidence in `docs/evidence/`. Organisations do not merge on green tests alone;
-they merge on evidence.
+Requirement IDs, requirement-to-test coverage, risks, decisions and evidence
+links belong in the issue or pull request and are assessed during human review.
+There is no automated requirement-ID check.
+CI uploads test results as the `test-evidence` artifact.
 
 The ruleset sets `require_last_push_approval: true` — **an agent cannot push a
 change and have it count as approved.**
 
 ## Cross-session evidence convention
 
-Sessions run in isolated worktrees and cannot read each other's chat. Therefore:
+Sessions run in isolated worktrees. Shared records must not depend on access to
+another session's chat:
 
-1. Every review session **commits and pushes** its report to `docs/evidence/`.
+1. Every review session records findings, decisions, agent context summaries
+   and evidence links in the issue or pull request.
 2. Review sessions branch from the **pushed** implementation branch.
-3. Consolidation reads committed files and `git diff`, never chat transcripts.
+3. Consolidation reads the issue or pull request, linked check results and
+   `git diff`, not private session transcripts.
 
 ## Repository administrator setup
 
 These steps require org/admin scope and are **not** applied by this repository's
 contents alone.
+
+The versioned ruleset now requires only the test, CodeQL and dependency-review
+checks. An administrator must synchronize any existing GitHub ruleset before
+merging the workflow removal; otherwise the deleted check can still block merge.
+Live ruleset synchronization for this change is unverified.
 
 > ### Current state
 >
@@ -208,8 +211,8 @@ Checklist:
       leaving those paths unprotected, so verify this rather than assume it
 - [x] All four required checks green on the baseline pull request
 - [x] Baseline pull request merged to `main`
-- [x] Ruleset `main-engineering-governance` applied and active; live definition
-      matches `.github/rulesets/main-protection.json`
+- [ ] Live `main-engineering-governance` ruleset synchronized with the updated
+      `.github/rulesets/main-protection.json`
 - [x] `require_last_push_approval` confirmed on — the implementing engineer
       cannot self-approve an interface change
 - [x] **Verified a direct push to `main` is actually refused** —

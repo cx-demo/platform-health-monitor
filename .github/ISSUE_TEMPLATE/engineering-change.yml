@@ -70,5 +70,5 @@ body:
         - label: Independent verification complete
         - label: Safety and security review complete
         - label: Interface change assessed and ICD revised if required
-        - label: Traceability matrix updated
+        - label: Requirement-to-test coverage and evidence linked in the issue or pull request
         - label: Residual risk accepted by named engineering authority

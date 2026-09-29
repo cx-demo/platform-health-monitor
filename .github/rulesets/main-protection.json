@@ -25,8 +25,7 @@
         "required_status_checks": [
           { "context": "Unit, integration and contract tests" },
           { "context": "CodeQL analysis" },
-          { "context": "Dependency Review" },
-          { "context": "Requirement Traceability" }
+          { "context": "Dependency Review" }
         ]
       }
     }

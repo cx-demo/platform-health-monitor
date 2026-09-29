@@ -60,6 +60,6 @@ which is precisely the problem SYS-4412 addresses.
 | Test, coverage and contract gate | `.github/workflows/ci.yml` |
 | Static security analysis | `.github/workflows/codeql.yml` |
 | Supply chain | `.github/workflows/dependency-review.yml`, `.github/dependabot.yml` |
-| Requirement traceability | `.github/workflows/traceability.yml` |
+| Coverage, risks and evidence review | Issue or pull request, assessed by a human reviewer |
 | Branch protection | `.github/rulesets/main-protection.json` |
 | Ownership | `.github/CODEOWNERS` |
