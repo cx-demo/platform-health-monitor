@@ -1,8 +1,12 @@
-# Engineering authority owns the service implementation and the governance layer.
-# The interface control board owns the controlled interface and its conformance tests.
+# Engineering authority and interface control board.
+#
+# In this demonstration repository both roles are held by a single named
+# collaborator. In a real programme these are separate teams, and the
+# separation between the implementing engineer and the interface control
+# board is the point of the control.
 
-/src/                    @engineering-authority
-/docs/icd/               @interface-control-board
-/tests/contract/         @interface-control-board
-/.github/workflows/      @engineering-authority
-/.github/rulesets/       @engineering-authority
+/src/                    @pedric1
+/docs/icd/               @pedric1
+/tests/contract/         @pedric1
+/.github/workflows/      @pedric1
+/.github/rulesets/       @pedric1

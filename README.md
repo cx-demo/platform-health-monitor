@@ -184,8 +184,11 @@ Checklist:
 - [ ] Code scanning enabled and CodeQL has completed at least one successful
       run (required checks need history)
 - [ ] Secret scanning and push protection enabled
-- [ ] Teams `@engineering-authority` and `@interface-control-board` exist and
-      have members — `CODEOWNERS` cannot resolve otherwise
+- [ ] `@pedric1` is a repository collaborator with write access — `CODEOWNERS`
+      cannot resolve otherwise. **Note:** with a single code owner, that person
+      cannot approve their own pull request, and `require_last_push_approval`
+      also bars the last pusher. Add a second reviewer, or open the demo PR
+      from a different account.
 - [ ] All four workflows present and green on `main`
 - [ ] Ruleset applied and active
 - [ ] `require_last_push_approval` confirmed on
