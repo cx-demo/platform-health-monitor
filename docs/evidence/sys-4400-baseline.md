@@ -100,10 +100,27 @@ record, not a setting somebody toggled in the UI.
 
 The implementing engineer cannot approve their own interface change.
 
+## Ruleset enforcement — verified
+
+`.github/rulesets/main-protection.json` is applied to the repository as ruleset
+`main-engineering-governance`, `enforcement: active`, targeting
+`refs/heads/main`. The live ruleset was read back and matches the committed
+definition: deletion and non-fast-forward blocked, pull request required with
+one approving review, code owner review, `require_last_push_approval`, stale
+review dismissal, review thread resolution, and all four required status
+checks under a strict policy.
+
+Enforcement was tested rather than assumed. A direct push of an empty commit
+to `main`:
+
+```
+! [remote rejected] HEAD -> main (push declined due to repository rule violations)
+```
+
+`main` was not modified. Bypassing the pull request boundary is refused by the
+platform, not by convention.
+
 ## Unverified at baseline
 
-The following are **unverified** and are explicitly labelled as such:
-
-- Ruleset enforcement and blocked-merge behaviour — `.github/rulesets/main-protection.json`
-  has not yet been applied to the repository. Apply it after this baseline
-  merges, then confirm an administrator merge is actually refused.
+Nothing outstanding for SYS-4400. All controls claimed in this file have a
+recorded observation behind them.
