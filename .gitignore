@@ -11,3 +11,6 @@ coverage.xml
 htmlcov/
 reports/
 .DS_Store
+
+# Impeccable design-hook cache (session-local, contains absolute paths)
+.impeccable/hook.cache.json

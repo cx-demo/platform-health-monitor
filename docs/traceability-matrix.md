@@ -21,6 +21,24 @@ requirement coverage. The `Requirement Traceability` workflow enforces this.
 
 Evidence: `docs/evidence/sys-4400-baseline.md`
 
+## SYS-4418 — Read-only fleet visualisation plate
+
+A browser-side presentation surface served at `GET /dashboard`. It is a consumer
+of ICD-PHM-002 revision C, not an extension of it: the interface is unchanged and
+no ICD revision is required.
+
+| AC | Requirement | Implementation | Test evidence | Assurance | Status |
+|---|---|---|---|---|---|
+| AC-4418-1 | A visualisation surface is served to operators | `main.py::serve_dashboard` | `test_dashboard.py::test_dashboard_is_served` | — | ✅ Verified |
+| AC-4418-2 | Service root directs to the visualisation surface | `main.py::serve_root` | `test_dashboard.py::test_root_redirects_to_the_dashboard` | — | ✅ Verified |
+| AC-4418-3 | Presentation routes are excluded from the published interface | `main.py` (`include_in_schema=False`) | `test_dashboard.py::test_dashboard_is_not_part_of_the_published_interface` | ICD rev C, RSK-3 | ✅ Verified |
+| AC-4418-4 | The surface renders only ICD-PHM-002 rev C published fields | `static/dashboard.html` | `test_dashboard.py::test_dashboard_renders_only_published_fields`, `::test_dashboard_consumes_the_published_field_set` | ICD rev C, RSK-2 | ✅ Verified |
+| AC-4418-5 | The surface is read-only and holds no privileged access | `static/dashboard.html` (`fetch('/platforms')` only) | `test_dashboard.py::test_dashboard_consumes_the_published_field_set` | RSK-2 | ✅ Verified |
+| AC-4418-6 | No third-party origin is contacted (air-gapped deployment) | `static/dashboard.html` (inline CSS/JS/SVG, no webfonts) | `test_dashboard.py::test_dashboard_requests_no_third_party_origin` | RSK-2 | ✅ Verified |
+| AC-4418-7 | The interface is unchanged; no ICD revision required | — | `test_icd_phm_002_compatibility.py` (unmodified, still passing) | ICD rev C | ✅ Verified |
+
+Evidence: `docs/evidence/sys-4418-dashboard.md`
+
 ## SYS-4412 — Derived platform readiness state
 
 Not implemented. `readinessState` does not exist in this codebase.

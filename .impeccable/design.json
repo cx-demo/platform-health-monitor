@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-29T12:26:17.445+08:00",
+  "title": "Design System: Platform Health & Mission Readiness Service",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Paper Ground", "canonical": "#e5e1d8", "tonalRamp": ["oklch(20% 0.01 80)", "oklch(30% 0.01 80)", "oklch(42% 0.01 80)", "oklch(55% 0.01 80)", "oklch(68% 0.01 80)", "oklch(80% 0.01 80)", "#e5e1d8", "oklch(96% 0.01 80)"] },
+      "plate": { "role": "neutral", "displayName": "Plate Paper", "canonical": "#f4f2ec", "tonalRamp": ["oklch(20% 0.01 85)", "oklch(32% 0.01 85)", "oklch(45% 0.01 85)", "oklch(58% 0.01 85)", "oklch(72% 0.01 85)", "oklch(84% 0.01 85)", "#f4f2ec", "oklch(98% 0.01 85)"] },
+      "ink": { "role": "neutral", "displayName": "Black Ink", "canonical": "#16130f", "tonalRamp": ["#16130f", "oklch(24% 0.01 70)", "oklch(34% 0.01 70)", "oklch(46% 0.01 70)", "oklch(58% 0.01 70)", "oklch(72% 0.01 70)", "oklch(84% 0.01 70)", "oklch(95% 0.01 70)"] },
+      "ink-2": { "role": "neutral", "displayName": "Muted Ink", "canonical": "#55504a", "tonalRamp": ["oklch(18% 0.01 70)", "oklch(28% 0.01 70)", "#55504a", "oklch(46% 0.01 70)", "oklch(58% 0.01 70)", "oklch(70% 0.01 70)", "oklch(84% 0.01 70)", "oklch(95% 0.01 70)"] },
+      "blue": { "role": "primary", "displayName": "Atlas Blue", "canonical": "#16496e", "tonalRamp": ["oklch(18% 0.06 245)", "oklch(28% 0.07 245)", "#16496e", "oklch(46% 0.08 245)", "oklch(58% 0.07 245)", "oklch(70% 0.06 245)", "oklch(84% 0.04 245)", "oklch(95% 0.02 245)"] },
+      "vermillion": { "role": "secondary", "displayName": "Vermillion Extremity", "canonical": "#c1321c", "tonalRamp": ["oklch(18% 0.08 35)", "oklch(30% 0.12 35)", "#c1321c", "oklch(52% 0.18 35)", "oklch(64% 0.14 35)", "oklch(76% 0.10 35)", "oklch(88% 0.06 35)", "oklch(96% 0.03 35)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Caption Display", "purpose": "All-caps sheet title." },
+      "title": { "displayName": "Plate Title", "purpose": "Figure headings and notice heads." },
+      "body": { "displayName": "Body", "purpose": "Default reading text." },
+      "body-small": { "displayName": "Small Body", "purpose": "Standfirsts, qualifiers, notes." },
+      "mono-label": { "displayName": "Mono Label", "purpose": "Identifiers, revisions, measures, records." },
+      "micro-label": { "displayName": "Micro Label", "purpose": "Axis labels and reserved field labels." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "rule-out", "value": "720ms cubic-bezier(0.16, 1, 0.3, 1) scaleX bar draw", "purpose": "Only authored moment; bars and voids rule out from an already legible default under prefers-reduced-motion: no-preference." }
+    ],
+    "breakpoints": [
+      { "name": "narrow", "value": "54rem" },
+      { "name": "tally-wide", "value": "54.0625rem" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Plate Frame",
+      "kind": "card",
+      "refersTo": "plate-frame",
+      "description": "Ink-framed printed plate for each figure.",
+      "html": "<section class=\"ds-plate\"><div class=\"ds-plate-head\"><h2>Figure 1 · Fleet tally</h2><span>Serviceability as published</span></div><p>Every figure is read from GET /platforms.</p></section>",
+      "css": ".ds-plate{background:#f4f2ec;color:#16130f;border:1px solid #16130f;border-radius:0;padding:28px 28px 32px;font-family:Helvetica Neue,Helvetica,Arial,Liberation Sans,sans-serif}.ds-plate-head{display:flex;justify-content:space-between;gap:24px;align-items:baseline;margin-bottom:28px}.ds-plate h2{margin:0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em}.ds-plate span{font:11px ui-monospace,SF Mono,SFMono-Regular,Menlo,Consolas,Liberation Mono,monospace;color:#55504a}.ds-plate p{margin:0;color:#55504a;font-size:15px;line-height:1.55}"
+    },
+    {
+      "name": "Status Mark",
+      "kind": "custom",
+      "refersTo": "status-mark-filled",
+      "description": "Filled or outlined square plus text; never hue alone.",
+      "html": "<p class=\"ds-status\"><span class=\"ds-mark ds-mark-filled\" aria-hidden=\"true\"></span>Reports operational</p>",
+      "css": ".ds-status{display:flex;align-items:baseline;gap:10px;color:#16130f;font:12px/1.5 Helvetica Neue,Helvetica,Arial,Liberation Sans,sans-serif}.ds-mark{width:10px;height:10px;border:1.5px solid #16130f;transform:translateY(.8px);border-radius:0}.ds-mark-filled{background:#16130f}"
+    },
+    {
+      "name": "Measured Bar",
+      "kind": "custom",
+      "refersTo": "published-bar",
+      "description": "Published quantity on a common scale.",
+      "html": "<div class=\"ds-sub\"><span>Prime power<code>GEN-01</code></span><div class=\"ds-track\"><div class=\"ds-bar\" style=\"width:94%\"></div></div><b>94 °C</b></div>",
+      "css": ".ds-sub{display:grid;grid-template-columns:clamp(104px,11vw,144px) minmax(0,1fr) 60px;gap:0 12px;align-items:center;color:#55504a;font:12px/1.35 Helvetica Neue,Helvetica,Arial,Liberation Sans,sans-serif}.ds-sub code{display:block;font:10px ui-monospace,SF Mono,SFMono-Regular,Menlo,Consolas,Liberation Mono,monospace;letter-spacing:.05em;color:#55504a}.ds-track{height:22px;display:flex;align-items:center}.ds-bar{height:10px;background:#16496e;transform-origin:left center}.ds-sub b{font:700 11px ui-monospace,SF Mono,SFMono-Regular,Menlo,Consolas,Liberation Mono,monospace;text-align:right;color:#c1321c}"
+    },
+    {
+      "name": "Reserved Void",
+      "kind": "custom",
+      "description": "Dimensioned absence for unpublished fields.",
+      "html": "<div class=\"ds-void\" role=\"img\" aria-label=\"Reserved: no field is published\"><span>Reserved</span></div>",
+      "css": ".ds-void{min-height:52px;border:1px solid #16130f;background:repeating-linear-gradient(45deg,transparent 0 5px,#16130f26 5px 6px);display:grid;place-items:center;border-radius:0}.ds-void span{font:9px ui-monospace,SF Mono,SFMono-Regular,Menlo,Consolas,Liberation Mono,monospace;letter-spacing:.12em;text-transform:uppercase;color:#55504a;background:#f4f2ec;padding:3px 6px}"
+    },
+    {
+      "name": "Record Link",
+      "kind": "custom",
+      "description": "Published-record link with hairline underline and vermillion focus.",
+      "html": "<a class=\"ds-record\" href=\"#\">Published record</a>",
+      "css": ".ds-record{font:10px ui-monospace,SF Mono,SFMono-Regular,Menlo,Consolas,Liberation Mono,monospace;letter-spacing:.06em;text-transform:uppercase;color:#55504a;text-decoration:none;border-bottom:1px solid #16130f26;padding-bottom:1px}.ds-record:hover{color:#16130f;border-bottom-color:#16130f}.ds-record:focus-visible{outline:2px solid #c1321c;outline-offset:3px;color:#16130f}"
+    },
+    {
+      "name": "Notice",
+      "kind": "card",
+      "description": "Ink-framed loading, empty, or error message.",
+      "html": "<div class=\"ds-notice ds-notice-error\" role=\"status\"><span>Fleet record unavailable</span>The fleet record could not be read.</div>",
+      "css": ".ds-notice{border:1px solid #16130f;padding:20px 24px;max-width:60ch;color:#16130f;font:14px/1.6 Helvetica Neue,Helvetica,Arial,Liberation Sans,sans-serif}.ds-notice span{display:block;margin-bottom:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.14em}.ds-notice-error{border-color:#c1321c}.ds-notice-error span{color:#c1321c}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Printed Engineering Plate",
+    "overview": "The shipped `GET /dashboard` surface is a read-only fleet plate, not an operations console. It belongs to the statistical-atlas data-graphic tradition: Otto Neurath and Gerd Arntz ISOTYPE for countable unit signs, Jacques Bertin for shared visual variables, and Edward Tufte for measured restraint. The world is paper, ink, rule, figure, and reserved absence.\n\nMode is **Operate**. Engineers scan published facts, compare three platforms on one shared scale, see the measured extremity, and also see the contract gap drawn as hatched reserved space. Interface absence is not hidden and not dramatised; it is dimensioned as an engineering fact.\n\nBinding constraints are law for this surface: it is read-only; it may render only fields published by ICD-PHM-002 revision C (`platformId`, `designation`, `platformType`, `operational`, and subsystem `subsystemId`, `name`, `temperatureCelsius`, `operational`); the forbidden contract-growth string `readinessState` must never appear in shipped source or tests; no third-party origins or webfonts; presentation routes such as `/` and `/dashboard` stay out of `/openapi.json`.",
+    "keyCharacteristics": [
+      "Light ground with printed plate, black ink, hairline rules, square corners.",
+      "Figures, bars, marks, and hatched reserved voids instead of dashboard cards.",
+      "Status encoded as mark plus text, never hue alone.",
+      "One authored motion moment only: bars rule out with `scaleX`; default state is already legible.",
+      "Air-gapped by design: system fonts, inline CSS/JS/SVG, no external assets."
+    ],
+    "rules": [
+      { "name": "Chromatic Quantity", "body": "Blue is quantity and vermillion is extremity. Neither colour may encode serviceability, readiness, severity, or tasking authority.", "section": "colors" },
+      { "name": "Absence Is Reserved", "body": "Missing or unpublished information is hatched reserved space in ink, never red/amber warning colour and never a zero value.", "section": "colors" },
+      { "name": "Contrast Override", "body": "High-contrast mode strengthens `ink-hair`, `ink-rule`, and `ink-2`; do not replace this with a separate colour theme.", "section": "colors" },
+      { "name": "No Webfont", "body": "No network fonts, icon fonts, or third-party font origins. The deployment is assumed air-gapped.", "section": "typography" },
+      { "name": "Identifier Mono", "body": "Use mono for machine-facing facts: identifiers, revisions, endpoint names, measurements, and records. Do not set explanatory prose in mono.", "section": "typography" },
+      { "name": "No Shadow", "body": "Do not add box shadows to this surface. Use paper contrast, borders, and rules.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the surface read-only and sourced from `GET /platforms` plus links to published platform records.",
+      "Do render only ICD-PHM-002 revision C fields and preserve the visible contract gap.",
+      "Do encode state as mark plus text; colour may reinforce measurements only.",
+      "Do use system grotesque and platform mono stacks only.",
+      "Do keep presentation routes out of the generated interface contract; `/openapi.json` must remain machine-readable ICD-PHM-002, not UI navigation.",
+      "Do draw absence as hatched reserved space when a question is not answerable from revision C."
+    ],
+    "donts": [
+      "Don't introduce the forbidden `readinessState` field into shipped source or tests, infer a readiness verdict, or publish any tasking conclusion.",
+      "Don't use traffic lights, gauges, gauge rings, sparklines, vital-sign traces, ECG metaphors, lamps, severity badges, or red/amber/green status language.",
+      "Don't re-propose the dark neon ops-centre dashboard; it was rejected as the category default and would imply live command authority the product does not have.",
+      "Don't re-propose white SaaS analytics cards; they were rejected as the predictable opposite and would make the contract gap feel like business intelligence, not interface governance.",
+      "Don't re-propose the ECG/vital-signs metaphor; it was rejected as the brief's literal reading and falsely suggests diagnosis, patient state, or continuous telemetry.",
+      "Don't add webfonts, CDNs, third-party origins, icon libraries, or image dependencies.",
+      "Don't add shadows, rounded card softness, neon glow, or animated dashboard spectacle."
+    ]
+  }
+}

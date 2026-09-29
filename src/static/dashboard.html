@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fleet Plate — Platform Health &amp; Mission Readiness Service</title>
+<meta name="description" content="A read-only statistical plate of the deployed platform fleet, drawn only from the fields ICD-PHM-002 revision C publishes.">
+
+<!--
+  DIRECTION CONTRACT — SYS-4418 Fleet Plate
+
+  THESIS: A statistical plate, not a status console. It renders only what
+  ICD-PHM-002 rev C publishes, and draws what the interface cannot answer as
+  measured, dimensioned void. It refuses the dark operations-centre dashboard
+  of traffic lights, gauge rings and sparklines.
+
+  OWN-WORLD: Vienna-method statistical atlas. Two paper values, one black ink,
+  one vermillion reserved for the measured extremity, one atlas blue for
+  nominal quantity. Countable geometric unit signs, never scaled area.
+  Grotesque caps labels, tabular figures, hairline rules, square corners.
+
+  STORY: An engineer reads three platforms against one shared scale, sees
+  94 °C tower over the fleet, then reads that the contract publishes no field
+  that would act on it, and leaves able to argue SYS-4412.
+
+  FIRST VIEWPORT: Caption block left, revision block right. Beneath it the
+  tally figure — three unit signs, all solid, under one line stating that
+  every platform reports operational. Then the measured plate on a shared axis.
+
+  FORM: Statistical-atlas data graphic; candidate 6 of 7 on the grounded list;
+  staging authored rather than dealt; seed key a0ccda31.
+-->
+
+<style>
+/* ───────────────────────────────────────────────────────────────────────
+   Vienna-method atlas. Two papers, one ink, two reserved chromatic roles.
+   ─────────────────────────────────────────────────────────────────────── */
+:root {
+  --paper:      #e5e1d8;
+  --plate:      #f4f2ec;
+  --ink:        #16130f;
+  --ink-2:      #55504a;
+  --ink-hair:   #16130f26;
+  --ink-rule:   #16130f14;
+  --blue:       #16496e;
+  --vermillion: #c1321c;
+
+  --u: 0.5rem;
+
+  /* One set of column measures, shared by the axis ruler, the gridlines and
+     every bar track, so the common scale is actually common. */
+  --subname: clamp(6.5rem, 11vw, 9rem);
+  --subval: 3.75rem;
+  --subgap: 0.75rem;
+
+  --sans: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+          "Liberation Mono", monospace;
+
+  --margin: clamp(1.25rem, 0.5rem + 3.5vw, 5rem);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+.sheet {
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: var(--margin) var(--margin) calc(var(--margin) * 1.5);
+}
+
+/* ── caption block ─────────────────────────────────────────────────── */
+
+.caption {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: calc(var(--u) * 2) calc(var(--u) * 4);
+  align-items: end;
+  padding-bottom: calc(var(--u) * 2.5);
+  border-bottom: 2px solid var(--ink);
+}
+
+.caption__title {
+  margin: 0;
+  font-size: clamp(1.5rem, 0.95rem + 2.3vw, 2.5rem);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.caption__standfirst {
+  margin: calc(var(--u) * 1.5) 0 0;
+  max-width: 62ch;
+  color: var(--ink-2);
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+.revision {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 0.15rem calc(var(--u) * 1.5);
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+.revision dt {
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--ink-2);
+}
+.revision dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  text-align: right;
+}
+
+/* ── shared plate frame ────────────────────────────────────────────── */
+
+.plate {
+  background: var(--plate);
+  border: 1px solid var(--ink);
+  margin-top: calc(var(--u) * 4);
+  padding: calc(var(--u) * 3.5) calc(var(--u) * 3.5) calc(var(--u) * 4);
+}
+
+.plate__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--u) calc(var(--u) * 3);
+  margin-bottom: calc(var(--u) * 3.5);
+}
+
+.plate__title {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+.plate__no {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  color: var(--ink-2);
+  letter-spacing: 0.04em;
+}
+
+/* ── tally figure ──────────────────────────────────────────────────── */
+
+.tally__signs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: calc(var(--u) * 4);
+  margin: 0 0 calc(var(--u) * 3);
+  padding: 0;
+  list-style: none;
+}
+
+.tally__sign {
+  display: grid;
+  justify-items: start;
+  gap: calc(var(--u) * 1.25);
+}
+
+.tally__sign svg {
+  display: block;
+  width: clamp(4.5rem, 3rem + 6vw, 7.5rem);
+  height: auto;
+  fill: var(--ink);
+}
+
+.tally__sign--outline svg { fill: none; stroke: var(--ink); stroke-width: 1.5; }
+
+.tally__label {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+}
+
+.tally__read {
+  margin: 0;
+  max-width: 54ch;
+  font-size: clamp(1.0625rem, 0.95rem + 0.6vw, 1.375rem);
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.tally__body {
+  display: grid;
+  gap: calc(var(--u) * 2);
+}
+
+@media (min-width: 54.0625rem) {
+  .tally__body {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 0 calc(var(--u) * 6);
+    align-items: start;
+  }
+  .tally__read { max-width: none; }
+  .tally__qualifier { margin-top: 0.35rem; }
+}
+
+.tally__qualifier {
+  margin: calc(var(--u) * 1.5) 0 0;
+  max-width: 66ch;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* ── measured plate ────────────────────────────────────────────────── */
+
+.axis,
+.row__body {
+  display: grid;
+  grid-template-columns:
+    [ident] minmax(9rem, 14rem)
+    [state] minmax(6.5rem, 8rem)
+    [scale] minmax(0, 1fr);
+  gap: 0 calc(var(--u) * 2.5);
+  align-items: center;
+}
+
+.axis {
+  padding-bottom: calc(var(--u) * 1);
+  border-bottom: 1px solid var(--ink);
+}
+
+.axis__label {
+  grid-column: ident / state;
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+}
+
+.axis__scale {
+  grid-column: scale;
+  display: grid;
+  grid-template-columns: var(--subname) minmax(0, 1fr) var(--subval);
+  gap: 0 var(--subgap);
+}
+
+.axis__ruler {
+  grid-column: 2;
+  position: relative;
+  height: 1.1rem;
+}
+
+.axis__tick {
+  position: absolute;
+  bottom: 0;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  color: var(--ink-2);
+}
+.axis__tick--first { transform: none; }
+.axis__tick--last  { transform: translateX(-100%); }
+
+.rows { margin: 0; padding: 0; list-style: none; }
+
+.row {
+  border-bottom: 1px solid var(--ink-rule);
+  padding: calc(var(--u) * 2.5) 0;
+}
+.row:last-child { border-bottom: 0; padding-bottom: 0; }
+
+.row__body { align-items: start; }
+
+.row__ident { display: flex; align-items: center; gap: calc(var(--u) * 1.75); }
+
+.row__sign {
+  flex: 0 0 auto;
+  width: 2.75rem;
+  fill: var(--ink);
+}
+
+.row__name {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.005em;
+}
+
+.row__id {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+}
+
+.row__state {
+  display: flex;
+  align-items: baseline;
+  gap: calc(var(--u) * 1.25);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* state is a mark, never a hue alone */
+.mark {
+  flex: 0 0 auto;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 1.5px solid var(--ink);
+  transform: translateY(0.05rem);
+}
+.mark--filled { background: var(--ink); }
+
+.row__scale { display: grid; gap: calc(var(--u) * 1.5); position: relative; }
+
+.grid-lines {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--subname) + var(--subgap));
+  right: calc(var(--subval) + var(--subgap));
+  pointer-events: none;
+}
+.grid-lines span {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--ink-hair);
+}
+
+.sub {
+  display: grid;
+  grid-template-columns: var(--subname) minmax(0, 1fr) var(--subval);
+  gap: 0 var(--subgap);
+  align-items: center;
+  position: relative;
+}
+
+.sub__name {
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--ink-2);
+}
+.sub__name code {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+}
+
+.sub__track { position: relative; height: 1.375rem; display: flex; align-items: center; }
+
+.sub__bar {
+  height: 0.625rem;
+  background: var(--blue);
+  transform-origin: left center;
+}
+.sub__bar--peak { background: var(--vermillion); }
+
+/* a subsystem that publishes no reading is drawn as void, never as zero */
+.sub__void {
+  height: 0.625rem;
+  width: 100%;
+  border: 1px solid var(--ink-hair);
+  background: repeating-linear-gradient(
+    45deg, transparent 0 4px, var(--ink-hair) 4px 5px
+  );
+}
+
+.sub__value {
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  text-align: right;
+  white-space: nowrap;
+}
+.sub__value--peak { font-weight: 700; color: var(--vermillion); }
+.sub__value--void { color: var(--ink-2); }
+
+.row__record {
+  grid-column: scale;
+  justify-self: end;
+  margin-top: calc(var(--u) * 1.5);
+  font-family: var(--mono);
+  font-size: 0.625rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-decoration: none;
+  border-bottom: 1px solid var(--ink-hair);
+  padding-bottom: 0.1rem;
+}
+.row__record:hover { color: var(--ink); border-bottom-color: var(--ink); }
+.row__record:focus-visible {
+  outline: 2px solid var(--vermillion);
+  outline-offset: 3px;
+  color: var(--ink);
+}
+
+/* ── extremum callout ──────────────────────────────────────────────── */
+
+.callout {
+  margin: calc(var(--u) * 4) 0 0;
+  padding-top: calc(var(--u) * 2.5);
+  border-top: 2px solid var(--ink);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0 calc(var(--u) * 2.5);
+  align-items: start;
+}
+
+.callout__figure {
+  font-family: var(--mono);
+  font-size: clamp(1.625rem, 1.2rem + 1.8vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--vermillion);
+  letter-spacing: -0.02em;
+}
+
+.callout__text {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.callout__text strong { color: var(--ink); font-weight: 700; }
+
+/* ── void ledger ───────────────────────────────────────────────────── */
+
+.void__intro {
+  margin: 0 0 calc(var(--u) * 3);
+  max-width: 68ch;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.void__list { margin: 0; padding: 0; list-style: none; display: grid; gap: calc(var(--u) * 2); }
+
+.void__item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(7rem, 12rem);
+  gap: 0 calc(var(--u) * 2.5);
+  align-items: stretch;
+}
+
+.void__q {
+  margin: 0;
+  align-self: center;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+.void__note {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+/* reserved / not-published: drawn as dimensioned void, given no ink of its own */
+.void__field {
+  position: relative;
+  min-height: 3.25rem;
+  border: 1px solid var(--ink);
+  background: repeating-linear-gradient(
+    45deg,
+    transparent 0 5px,
+    var(--ink-hair) 5px 6px
+  );
+  display: grid;
+  place-items: center;
+}
+.void__field span {
+  font-family: var(--mono);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: var(--plate);
+  padding: 0.2rem 0.4rem;
+}
+
+.void__close {
+  margin: calc(var(--u) * 3.5) 0 0;
+  padding-top: calc(var(--u) * 2.5);
+  border-top: 1px solid var(--ink);
+  max-width: 68ch;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.void__close strong { color: var(--ink); font-weight: 700; }
+
+/* ── provenance ────────────────────────────────────────────────────── */
+
+.colophon {
+  margin-top: calc(var(--u) * 4);
+  padding-top: calc(var(--u) * 2);
+  border-top: 1px solid var(--ink);
+  display: grid;
+  gap: calc(var(--u) * 1.5) calc(var(--u) * 5);
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.colophon p { margin: 0; max-width: 46ch; }
+.colophon code { font-family: var(--mono); font-size: 0.6875rem; color: var(--ink); }
+.colophon a { color: var(--ink); text-decoration-thickness: 1px; text-underline-offset: 0.2em; }
+.colophon a:focus-visible { outline: 2px solid var(--vermillion); outline-offset: 2px; }
+
+/* ── loading / error / empty ───────────────────────────────────────── */
+
+.notice {
+  border: 1px solid var(--ink);
+  padding: calc(var(--u) * 2.5) calc(var(--u) * 3);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  max-width: 60ch;
+}
+.notice__head {
+  display: block;
+  margin-bottom: calc(var(--u) * 0.75);
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+.notice--error { border-color: var(--vermillion); color: var(--ink); }
+.notice--error .notice__head { color: var(--vermillion); }
+.notice code { font-family: var(--mono); font-size: 0.75rem; }
+
+.skeleton { display: grid; gap: calc(var(--u) * 2.5); }
+.skeleton__row {
+  height: 3.5rem;
+  border: 1px solid var(--ink-hair);
+  background: repeating-linear-gradient(
+    45deg, transparent 0 5px, var(--ink-rule) 5px 6px
+  );
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  margin: -1px; padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── the one authored moment: the plate rules its bars out ─────────
+   Nothing here starts invisible. If motion never runs, the sheet is
+   already complete and correct — the animation only draws the bars. */
+
+@media (prefers-reduced-motion: no-preference) {
+  .is-setting .sub__bar,
+  .is-setting .sub__void { animation: rule-out 720ms var(--ease) backwards; }
+}
+
+@keyframes rule-out {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* ── narrow ────────────────────────────────────────────────────────── */
+
+@media (max-width: 54rem) {
+  .caption { grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .revision { grid-template-columns: auto auto; justify-content: start; }
+  .revision dd { text-align: left; }
+
+  .axis { display: none; }
+
+  .row__body { grid-template-columns: minmax(0, 1fr); gap: calc(var(--u) * 2) 0; }
+  .row__state { grid-column: 1; }
+  .row__scale { grid-column: 1; }
+  .row__record { grid-column: 1; justify-self: start; margin-top: 0; }
+
+  .sub { grid-template-columns: minmax(0, 1fr) var(--subval); gap: calc(var(--u) * 0.5) var(--subgap); }
+  .sub__name { grid-column: 1 / -1; }
+  .sub__name code { display: inline; margin-left: calc(var(--u) * 1); }
+  .grid-lines { left: 0; }
+
+  .void__item { grid-template-columns: minmax(0, 1fr); gap: calc(var(--u) * 1.5) 0; }
+  .void__field { min-height: 2.5rem; }
+
+  .callout { grid-template-columns: minmax(0, 1fr); gap: calc(var(--u) * 1.5) 0; }
+}
+
+@media (prefers-contrast: more) {
+  :root { --ink-hair: #16130f66; --ink-rule: #16130f40; --ink-2: #332f2a; }
+}
+</style>
+</head>
+
+<body>
+<div class="sheet">
+
+  <header class="caption">
+    <div>
+      <h1 class="caption__title">Fleet plate — deployed platform health</h1>
+      <p class="caption__standfirst">
+        Every figure on this sheet is read from <code>GET /platforms</code>. This plate is an
+        ordinary consumer of ICD&#8209;PHM&#8209;002 revision C and holds no privileged access to
+        the service, so whatever it cannot show you, no consumer can show you.
+      </p>
+    </div>
+    <dl class="revision">
+      <dt>Interface</dt><dd>ICD-PHM-002</dd>
+      <dt>Revision</dt><dd>C</dd>
+      <dt>Service</dt><dd>PHMS 2.3.0</dd>
+      <dt>Requirement</dt><dd>SYS-4418</dd>
+      <dt>Sheet</dt><dd>1 of 1</dd>
+    </dl>
+  </header>
+
+  <!-- ── Figure 1 · tally ──────────────────────────────────────────── -->
+  <section class="plate" aria-labelledby="tally-title">
+    <div class="plate__head">
+      <h2 class="plate__title" id="tally-title">Figure 1 · Fleet tally</h2>
+      <span class="plate__no">Serviceability as published</span>
+    </div>
+    <div id="tally"></div>
+  </section>
+
+  <!-- ── Figure 2 · measured plate ─────────────────────────────────── -->
+  <section class="plate" aria-labelledby="measured-title">
+    <div class="plate__head">
+      <h2 class="plate__title" id="measured-title">Figure 2 · Subsystem temperature, common scale</h2>
+      <span class="plate__no">Degrees Celsius · 0–100</span>
+    </div>
+    <div id="measured"></div>
+  </section>
+
+  <!-- ── Figure 3 · void ledger ────────────────────────────────────── -->
+  <section class="plate" aria-labelledby="void-title">
+    <div class="plate__head">
+      <h2 class="plate__title" id="void-title">Figure 3 · What this interface cannot answer</h2>
+      <span class="plate__no">Reserved · not published at revision C</span>
+    </div>
+
+    <p class="void__intro">
+      The three questions below decide whether a platform may be tasked. Revision C carries no
+      field that answers any of them, so each consumer answers them privately, from its own
+      assumptions, and two consumers reading the same payload may reasonably disagree.
+    </p>
+
+    <ul class="void__list">
+      <li class="void__item">
+        <h3 class="void__q">
+          Is this fault mission-critical, or merely noted?
+          <span class="void__note">
+            A subsystem reports only that it is operational or that it is not. Consequence is
+            absent, so severity is guessed downstream.
+          </span>
+        </h3>
+        <div class="void__field" role="img" aria-label="Reserved: no field is published">
+          <span>Reserved</span>
+        </div>
+      </li>
+
+      <li class="void__item">
+        <h3 class="void__q">
+          How old is this reading?
+          <span class="void__note">
+            A temperature is published without an observation time. A value recorded seconds ago
+            and one recorded an hour ago are indistinguishable on this sheet.
+          </span>
+        </h3>
+        <div class="void__field" role="img" aria-label="Reserved: no field is published">
+          <span>Reserved</span>
+        </div>
+      </li>
+
+      <li class="void__item">
+        <h3 class="void__q">
+          May this platform be tasked?
+          <span class="void__note">
+            No published field states a readiness conclusion. The judgement is left to every
+            consumer independently, which is the condition SYS-4412 exists to end.
+          </span>
+        </h3>
+        <div class="void__field" role="img" aria-label="Reserved: no field is published">
+          <span>Reserved</span>
+        </div>
+      </li>
+    </ul>
+
+    <p class="void__close">
+      These voids are drawn deliberately. <strong>They are a finding, not a defect in this
+      sheet.</strong> Closing them is an interface change: it advances ICD&#8209;PHM&#8209;002 to
+      revision D and requires a consumer impact assessment before merge. Until that change is
+      approved, the honest rendering of an unanswerable question is an empty field with its
+      dimensions shown.
+    </p>
+  </section>
+
+  <footer class="colophon">
+    <p>
+      <strong>Read-only.</strong> This sheet issues no command and holds no tasking authority. It
+      performs one request, <code>GET /platforms</code>, and draws the result.
+    </p>
+    <p>
+      <strong>Source of figures.</strong> Published record for any platform is available directly
+      at <code>/platforms/{platformId}</code>. The full generated interface is at
+      <a href="/docs">/docs</a>, <a href="/redoc">/redoc</a> and
+      <a href="/openapi.json">/openapi.json</a>.
+    </p>
+    <p>
+      <strong>Fleet data is synthetic</strong> and fixed in <code>src/repository.py</code> for
+      demonstration. Platform designations, identifiers and readings are authored, not observed,
+      and represent no real platform.
+    </p>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var SCALE_MAX = 100;
+  var TICKS = [0, 25, 50, 75, 100];
+
+  // Unit signs, drawn in the atlas's own geometric grammar rather than
+  // borrowed from an icon set. Silhouette only; readable at 44px.
+  var SIGNS = {
+    LAND:
+      '<path d="M4 30h56v9H4z"/>' +
+      '<path d="M14 15h21l9 13H14z"/>' +
+      '<path d="M35 15l22-9 3 6-22 9z"/>' +
+      '<circle cx="16" cy="42" r="6"/><circle cx="32" cy="42" r="6"/>' +
+      '<circle cx="48" cy="42" r="6"/>',
+    AIR:
+      '<rect x="2" y="9" width="60" height="3"/>' +
+      '<rect x="30" y="12" width="4" height="7"/>' +
+      '<path d="M14 19h20l14 8v9H20a6 6 0 0 1 0-12h-6z"/>' +
+      '<rect x="44" y="24" width="18" height="3"/>' +
+      '<path d="M58 18h4v12h-4z"/>' +
+      '<rect x="16" y="38" width="30" height="3"/>',
+    MISSION_SYSTEM:
+      '<rect x="6" y="20" width="38" height="22"/>' +
+      '<rect x="48" y="6" width="3" height="36"/>' +
+      '<path d="M40 6h20v3H40zM42 13h16v3H42zM44 20h12v3H44z"/>' +
+      '<rect x="2" y="42" width="60" height="4"/>',
+    DEFAULT:
+      '<rect x="6" y="14" width="52" height="28"/><rect x="2" y="42" width="60" height="4"/>'
+  };
+
+  function sign(type) { return SIGNS[type] || SIGNS.DEFAULT; }
+
+  function svg(type, cls) {
+    return '<svg class="' + cls + '" viewBox="0 0 64 48" role="presentation" ' +
+           'focusable="false" aria-hidden="true">' + sign(type) + '</svg>';
+  }
+
+  function esc(value) {
+    return String(value).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function notice(target, kind, head, body) {
+    document.getElementById(target).innerHTML =
+      '<div class="notice notice--' + kind + '" role="status">' +
+      '<span class="notice__head">' + head + '</span>' + body + '</div>';
+  }
+
+  function pct(value) { return Math.max(0, Math.min(100, (value / SCALE_MAX) * 100)); }
+
+  /* ── Figure 1 ──────────────────────────────────────────────────── */
+
+  function renderTally(platforms) {
+    var serviceable = platforms.filter(function (p) { return p.operational; }).length;
+    var total = platforms.length;
+
+    var signs = platforms.map(function (p) {
+      return '<li class="tally__sign' + (p.operational ? '' : ' tally__sign--outline') + '">' +
+             svg(p.platformType, '') +
+             '<span class="tally__label">' + esc(p.platformId) + '</span></li>';
+    }).join('');
+
+    var read = serviceable === total
+      ? 'All ' + total + ' platforms report operational.'
+      : serviceable + ' of ' + total + ' platforms report operational.';
+
+    document.getElementById('tally').innerHTML =
+      '<ul class="tally__signs">' + signs + '</ul>' +
+      '<div class="tally__body">' +
+      '<p class="tally__read">' + read +
+      ' The interface publishes no field that would say otherwise.</p>' +
+      '<p class="tally__qualifier">A solid sign is a platform whose published ' +
+      '<code>operational</code> flag reads true; an outlined sign is one that reads false. ' +
+      'That flag is the only serviceability statement revision C carries, and it is set on the ' +
+      'platform, never on the fault.</p></div>';
+  }
+
+  /* ── Figure 2 ──────────────────────────────────────────────────── */
+
+  function renderMeasured(platforms) {
+    var readings = [];
+    platforms.forEach(function (p) {
+      (p.subsystems || []).forEach(function (s) {
+        if (typeof s.temperatureCelsius === 'number' && isFinite(s.temperatureCelsius)) {
+          readings.push({ platform: p, sub: s });
+        }
+      });
+    });
+
+    var peak = readings.reduce(function (best, r) {
+      return (!best || r.sub.temperatureCelsius > best.sub.temperatureCelsius) ? r : best;
+    }, null);
+
+    var gridLines = TICKS.slice(1, -1).map(function (t) {
+      return '<span style="left:' + pct(t) + '%"></span>';
+    }).join('');
+
+    var axis =
+      '<div class="axis" aria-hidden="true">' +
+      '<span class="axis__label">Platform</span>' +
+      '<div class="axis__scale"><div class="axis__ruler">' +
+      TICKS.map(function (t, i) {
+        var cls = 'axis__tick' +
+          (i === 0 ? ' axis__tick--first' : i === TICKS.length - 1 ? ' axis__tick--last' : '');
+        return '<span class="' + cls + '" style="left:' + pct(t) + '%">' + t + '</span>';
+      }).join('') +
+      '</div></div></div>';
+
+    var rows = platforms.map(function (p, i) {
+      var subs = (p.subsystems || []).map(function (s, j) {
+        var value = s.temperatureCelsius;
+        var has = typeof value === 'number' && isFinite(value);
+        var isPeak = peak && has && s === peak.sub;
+        var delay = (i * 90) + (j * 70) + 120;
+
+        var bar = has
+          ? '<div class="sub__bar' + (isPeak ? ' sub__bar--peak' : '') + '" ' +
+            'style="width:' + pct(value) + '%;animation-delay:' + delay + 'ms"></div>'
+          : '<div class="sub__void" style="animation-delay:' + delay + 'ms"></div>';
+
+        var figure = has
+          ? '<span class="sub__value' + (isPeak ? ' sub__value--peak' : '') + '">' +
+            esc(value.toFixed(0)) + '&#8201;°C</span>'
+          : '<span class="sub__value sub__value--void" title="No reading published">' +
+            'n/p</span>';
+
+        return '<div class="sub">' +
+               '<div class="sub__name">' + esc(s.name) +
+               '<code>' + esc(s.subsystemId) +
+               (s.operational ? '' : ' · not operational') + '</code></div>' +
+               '<div class="sub__track">' + bar + '</div>' + figure + '</div>';
+      }).join('');
+
+      return '<li class="row"><div class="row__body">' +
+             '<div class="row__ident">' + svg(p.platformType, 'row__sign') +
+             '<h3 class="row__name">' + esc(p.designation) +
+             '<span class="row__id">' + esc(p.platformId) + ' · ' +
+             esc(String(p.platformType).replace(/_/g, ' ')) + '</span></h3></div>' +
+             '<p class="row__state"><span class="mark' +
+             (p.operational ? ' mark--filled' : '') + '" aria-hidden="true"></span>' +
+             (p.operational ? 'Reports operational' : 'Reports not operational') + '</p>' +
+             '<div class="row__scale">' +
+             '<div class="grid-lines" aria-hidden="true">' + gridLines + '</div>' +
+             subs + '</div>' +
+             '<a class="row__record" href="/platforms/' + encodeURIComponent(p.platformId) + '">' +
+             'Published record</a>' +
+             '</div></li>';
+    }).join('');
+
+    var callout = peak
+      ? '<div class="callout">' +
+        '<p class="callout__figure">' + peak.sub.temperatureCelsius.toFixed(0) + '&#8201;°C</p>' +
+        '<p class="callout__text">Highest reading in the fleet — <strong>' +
+        esc(peak.sub.name) + '</strong> on <strong>' + esc(peak.platform.designation) +
+        '</strong>. The subsystem reports operational, the platform reports operational, and the ' +
+        'reading carries no threshold, no severity and no observation time. ' +
+        'This sheet marks the extremity because it is measurable; it does not classify it, ' +
+        'because revision C gives it nothing to classify with.</p></div>'
+      : '';
+
+    document.getElementById('measured').innerHTML =
+      axis + '<ul class="rows">' + rows + '</ul>' + callout;
+  }
+
+  /* ── boot ──────────────────────────────────────────────────────── */
+
+  function skeleton(id, count) {
+    var rows = '';
+    for (var i = 0; i < count; i++) { rows += '<div class="skeleton__row"></div>'; }
+    document.getElementById(id).innerHTML =
+      '<div class="skeleton" role="status">' +
+      '<span class="visually-hidden">Reading the published fleet record.</span>' +
+      rows + '</div>';
+  }
+
+  skeleton('tally', 1);
+  skeleton('measured', 3);
+
+  fetch('/platforms', { headers: { Accept: 'application/json' } })
+    .then(function (response) {
+      if (!response.ok) { throw new Error('HTTP ' + response.status); }
+      return response.json();
+    })
+    .then(function (platforms) {
+      if (!Array.isArray(platforms) || platforms.length === 0) {
+        notice('tally', 'empty', 'No platforms published',
+          'The service returned an empty fleet. Nothing is withheld and nothing is wrong ' +
+          'with this sheet — there is simply no platform on the interface to draw.');
+        document.getElementById('measured').innerHTML = '';
+        return;
+      }
+      renderTally(platforms);
+      renderMeasured(platforms);
+      document.body.classList.add('is-setting');
+    })
+    .catch(function (error) {
+      var body = 'The fleet record could not be read from <code>GET /platforms</code> — ' +
+                 '<code>' + esc(error.message) + '</code>. No figures are drawn, because a ' +
+                 'plate drawn from a failed read would be indistinguishable from a plate ' +
+                 'drawn from an empty fleet. Confirm the service is running, then reload.';
+      notice('tally', 'error', 'Fleet record unavailable', body);
+      document.getElementById('measured').innerHTML = '';
+    });
+})();
+</script>
+</body>
+</html>
