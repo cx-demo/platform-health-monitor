@@ -50,13 +50,15 @@ can build against and that no single team may change unilaterally.
   issue or pull request for human review.
   `main` is protected by an active ruleset; code ownership is split so that `/docs/icd/` and
   `/tests/contract/` sit with the interface-control board.
-- `tests/contract/test_icd_phm_002_compatibility.py` asserts the ICD-PHM-002 revision C field set
-  exactly. It is a governance instrument. Weakening or deleting it to make a build pass is the
-  defined wrong answer.
+- `tests/contract/test_icd_phm_002_compatibility.py` asserts the ICD-PHM-002 revision D field set
+  exactly on both endpoints and checks it against the ICD Platform record table. It is a
+  governance instrument. Weakening, skipping or deleting it to make a build pass is the defined
+  wrong answer; when an ICD revision changes the payload, it is updated to that revision in the
+  same pull request, at least as strictly, with code-owner approval of both.
 - SYS-4412 adds derived `readinessState` (`FMC` / `PMC` / `NMC`) and `readinessConfidence`
   (`HIGH` / `LOW`) to every platform record under rule `PHM-RDY-1`. It advances ICD-PHM-002 to
-  revision D, which is drafted and awaits Interface Control Board approval. Until the board
-  approves rev D and updates `tests/contract/`, the contract suite stays red by design.
+  revision D, which is drafted and awaits Interface Control Board approval of both the ICD and
+  the contract tests.
 
 ## Capabilities and Constraints
 

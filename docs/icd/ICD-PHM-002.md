@@ -229,20 +229,22 @@ exposed:
 
 ## Conformance
 
-`tests/contract/test_icd_phm_002_compatibility.py` asserts the rev C field set
-exactly, on both endpoints. It runs as a separately named CI step
-(`ICD contract tests`) so an interface violation is visibly distinct from an
-ordinary test failure.
+`tests/contract/test_icd_phm_002_compatibility.py` asserts the rev D field set
+exactly, on both endpoints, and checks that `readinessState` and
+`readinessConfidence` carry only the values this document permits. It also
+checks that the field set it asserts matches the [Platform record](#platform-record)
+table above, so this document and the test cannot drift apart. It runs as a
+separately named CI step (`ICD contract tests`) so an interface violation is
+visibly distinct from an ordinary test failure.
 
-This test must never be weakened or deleted to make a change pass. A failure is
-an interface-change escalation, not a test defect.
-
-The rev D implementation fails this test by design. The Interface Control Board
-updates `tests/contract/` to the rev D field set after approving this revision.
-Until then the contract failure is the recorded escalation.
+This test must never be weakened, skipped or deleted to make a change pass. A
+failure against an unrevised ICD is an interface-change escalation, not a test
+defect. When a revision of this document changes the payload, `tests/contract/`
+is updated to the new revision in the same pull request, at least as strictly,
+and code-owner approval of both is required.
 
 ## Open interface changes
 
 | Requirement | Proposed change | Status |
 |---|---|---|
-| SYS-4412 | Add derived `readinessState` and `readinessConfidence` to the platform record | Rev D drafted — awaiting ICB approval and contract-test update |
+| SYS-4412 | Add derived `readinessState` and `readinessConfidence` to the platform record | Rev D drafted — awaiting ICB approval |

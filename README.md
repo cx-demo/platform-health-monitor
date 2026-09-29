@@ -74,17 +74,20 @@ All four run in CI under the check context
 ## Interface control
 
 `docs/icd/ICD-PHM-002.md` is a **controlled interface document**. Rev C is
-baselined; rev D (SYS-4412) is drafted and awaits Interface Control Board approval. `tests/contract/test_icd_phm_002_compatibility.py` asserts the declared
-field set exactly, on both endpoints.
+baselined; rev D (SYS-4412) is drafted and awaits Interface Control Board approval. `tests/contract/test_icd_phm_002_compatibility.py` asserts the rev D
+field set exactly, on both endpoints, and checks it against the ICD Platform
+record table so the two cannot drift.
 
 Two downstream consumers validate the response schema strictly, so an additive
-field is **not** automatically non-breaking. Adding `readinessState` turns
-the contract suite red until the board approves rev D and updates `tests/contract/`. That is the intended control, not a defect:
+field is **not** automatically non-breaking. A payload change therefore needs an
+ICD revision, and `tests/contract/` is updated to the new revision in the same
+pull request, at least as strictly. The controls:
 
-- weakening or deleting the contract test is forbidden by
-  `.github/copilot-instructions.md`,
+- weakening, skipping or deleting contract tests to make a change pass is
+  forbidden by `.github/copilot-instructions.md`; a contract failure on an
+  unrevised ICD is an interface-change escalation, not a test defect,
 - `tests/contract/` and `docs/icd/` are CODEOWNER-protected by the interface
-  control board,
+  control board, whose approval of both is required,
 - the contract suite is a required status check.
 
 The correct resolution is an ICD revision to rev D plus a recorded consumer
