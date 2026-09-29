@@ -184,11 +184,16 @@ Checklist:
 - [ ] Code scanning enabled and CodeQL has completed at least one successful
       run (required checks need history)
 - [ ] Secret scanning and push protection enabled
-- [ ] `@pedric1` is a repository collaborator with write access — `CODEOWNERS`
-      cannot resolve otherwise. **Note:** with a single code owner, that person
-      cannot approve their own pull request, and `require_last_push_approval`
-      also bars the last pusher. Add a second reviewer, or open the demo PR
-      from a different account.
+- [ ] **`@cxdemosg` added as a repository collaborator with write access** —
+      this account does not currently exist as a GitHub user and is not a
+      collaborator. GitHub **silently ignores** unresolvable `CODEOWNERS`
+      entries, so `/src/`, `/.github/workflows/` and `/.github/rulesets/` are
+      unprotected until this is fixed. Verify with
+      `gh api /repos/$REPO/codeowners/errors`.
+- [ ] `@pedric1` confirmed as a collaborator with write access (interface
+      control board — owns `docs/icd/` and `tests/contract/`)
+- [ ] Note: `require_last_push_approval` bars the last pusher from approving,
+      so the implementing engineer cannot self-approve an interface change
 - [ ] All four workflows present and green on `main`
 - [ ] Ruleset applied and active
 - [ ] `require_last_push_approval` confirmed on
