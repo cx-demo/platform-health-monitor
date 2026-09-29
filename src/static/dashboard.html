@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fleet Plate — Platform Health &amp; Mission Readiness Service</title>
-<meta name="description" content="A read-only statistical plate of the deployed platform fleet, drawn only from the fields ICD-PHM-002 revision C publishes.">
+<meta name="description" content="A read-only statistical plate of the deployed platform fleet, drawn only from the fields ICD-PHM-002 publishes (revision D draft).">
 
 <!--
   DIRECTION CONTRACT — SYS-4418 Fleet Plate
 
   THESIS: A statistical plate, not a status console. It renders only what
-  ICD-PHM-002 rev C publishes, and draws what the interface cannot answer as
+  ICD-PHM-002 publishes (rev D draft, SYS-4412), and draws what the interface cannot answer as
   measured, dimensioned void. It refuses the dark operations-centre dashboard
   of traffic lights, gauge rings and sparklines.
 
@@ -316,6 +316,17 @@ body {
   font-weight: 400;
   letter-spacing: 0.05em;
   color: var(--ink-2);
+}
+
+/* SYS-4412: derived readiness is neutral text, never hue, badge or lamp */
+.row__readiness {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--ink);
 }
 
 .row__state {
@@ -634,15 +645,15 @@ body {
       <h1 class="caption__title">Fleet plate — deployed platform health</h1>
       <p class="caption__standfirst">
         Every figure on this sheet is read from <code>GET /platforms</code>. This plate is an
-        ordinary consumer of ICD&#8209;PHM&#8209;002 revision C and holds no privileged access to
+        ordinary consumer of ICD&#8209;PHM&#8209;002 revision D (draft) and holds no privileged access to
         the service, so whatever it cannot show you, no consumer can show you.
       </p>
     </div>
     <dl class="revision">
       <dt>Interface</dt><dd>ICD-PHM-002</dd>
-      <dt>Revision</dt><dd>C</dd>
+      <dt>Revision</dt><dd>D (draft)</dd>
       <dt>Service</dt><dd>PHMS 2.3.0</dd>
-      <dt>Requirement</dt><dd>SYS-4418</dd>
+      <dt>Requirement</dt><dd>SYS-4418 · SYS-4412</dd>
       <dt>Sheet</dt><dd>1 of 1</dd>
     </dl>
   </header>
@@ -669,13 +680,13 @@ body {
   <section class="plate" aria-labelledby="void-title">
     <div class="plate__head">
       <h2 class="plate__title" id="void-title">Figure 3 · What this interface cannot answer</h2>
-      <span class="plate__no">Reserved · not published at revision C</span>
+      <span class="plate__no">Reserved · not published at revision D</span>
     </div>
 
     <p class="void__intro">
-      The three questions below decide whether a platform may be tasked. Revision C carries no
-      field that answers any of them, so each consumer answers them privately, from its own
-      assumptions, and two consumers reading the same payload may reasonably disagree.
+      Revision D (draft) publishes one derived readiness state per platform, shown in Figure 2,
+      under rule PHM&#8209;RDY&#8209;1. It does not publish the evidence behind that state. The two
+      questions below remain unanswerable from the interface.
     </p>
 
     <ul class="void__list">
@@ -705,26 +716,13 @@ body {
         </div>
       </li>
 
-      <li class="void__item">
-        <h3 class="void__q">
-          May this platform be tasked?
-          <span class="void__note">
-            No published field states a readiness conclusion. The judgement is left to every
-            consumer independently, which is the condition SYS-4412 exists to end.
-          </span>
-        </h3>
-        <div class="void__field" role="img" aria-label="Reserved: no field is published">
-          <span>Reserved</span>
-        </div>
-      </li>
     </ul>
 
     <p class="void__close">
       These voids are drawn deliberately. <strong>They are a finding, not a defect in this
-      sheet.</strong> Closing them is an interface change: it advances ICD&#8209;PHM&#8209;002 to
-      revision D and requires a consumer impact assessment before merge. Until that change is
-      approved, the honest rendering of an unanswerable question is an empty field with its
-      dimensions shown.
+      sheet.</strong> Closing them is a further interface change: it needs a new
+      ICD&#8209;PHM&#8209;002 revision and a consumer impact assessment before merge. Until then, the
+      honest rendering of an unanswerable question is an empty field with its dimensions shown.
     </p>
   </section>
 
@@ -821,11 +819,10 @@ body {
       '<ul class="tally__signs">' + signs + '</ul>' +
       '<div class="tally__body">' +
       '<p class="tally__read">' + read +
-      ' The interface publishes no field that would say otherwise.</p>' +
+      ' The derived readiness state for each platform is given in Figure 2.</p>' +
       '<p class="tally__qualifier">A solid sign is a platform whose published ' +
       '<code>operational</code> flag reads true; an outlined sign is one that reads false. ' +
-      'That flag is the only serviceability statement revision C carries, and it is set on the ' +
-      'platform, never on the fault.</p></div>';
+      'That flag is set on the platform, never on the fault.</p></div>';
   }
 
   /* ── Figure 2 ──────────────────────────────────────────────────── */
@@ -888,7 +885,9 @@ body {
              '<div class="row__ident">' + svg(p.platformType, 'row__sign') +
              '<h3 class="row__name">' + esc(p.designation) +
              '<span class="row__id">' + esc(p.platformId) + ' · ' +
-             esc(String(p.platformType).replace(/_/g, ' ')) + '</span></h3></div>' +
+             esc(String(p.platformType).replace(/_/g, ' ')) + '</span>' +
+             '<span class="row__readiness">Readiness ' + esc(p.readinessState) +
+             ' · confidence ' + esc(p.readinessConfidence) + '</span></h3></div>' +
              '<p class="row__state"><span class="mark' +
              (p.operational ? ' mark--filled' : '') + '" aria-hidden="true"></span>' +
              (p.operational ? 'Reports operational' : 'Reports not operational') + '</p>' +
@@ -905,10 +904,9 @@ body {
         '<p class="callout__figure">' + peak.sub.temperatureCelsius.toFixed(0) + '&#8201;°C</p>' +
         '<p class="callout__text">Highest reading in the fleet — <strong>' +
         esc(peak.sub.name) + '</strong> on <strong>' + esc(peak.platform.designation) +
-        '</strong>. The subsystem reports operational, the platform reports operational, and the ' +
-        'reading carries no threshold, no severity and no observation time. ' +
-        'This sheet marks the extremity because it is measurable; it does not classify it, ' +
-        'because revision C gives it nothing to classify with.</p></div>'
+        '</strong>. The reading is published without an observation time. ' +
+        'This sheet marks the extremity because it is measurable; it does not classify it. ' +
+        'Classification is the service\'s, published once per platform as its readiness state.</p></div>'
       : '';
 
     document.getElementById('measured').innerHTML =

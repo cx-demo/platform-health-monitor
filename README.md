@@ -14,13 +14,12 @@ governance gate → named human approval.
 
 ## Scenario
 
-The API currently exposes **raw subsystem telemetry only**. Every downstream
-consumer re-implements its own interpretation of "is this platform usable", and
-they disagree. `SYS-4412` proposes a single authoritative `readinessState`
-derivation (`FMC` / `PMC` / `NMC`).
-
-`readinessState` is **deliberately not implemented here.** This repository is
-the *before* state. See `demo/sys-4412-issue.md` for the engineering change request.
+At ICD-PHM-002 rev C the API exposed **raw subsystem telemetry only**. Every
+downstream consumer re-implemented its own interpretation of "is this platform
+usable", and they disagreed. `SYS-4412` adds a single authoritative
+`readinessState` derivation (`FMC` / `PMC` / `NMC`) plus `readinessConfidence`
+(`HIGH` / `LOW`), under rule `PHM-RDY-1` and draft ICD rev D. See
+`demo/sys-4412-issue.md` for the engineering change request.
 
 ## Fleet fixture
 
@@ -30,7 +29,9 @@ the *before* state. See `demo/sys-4412-issue.md` for the engineering change requ
 | `AIR-207` | `AIR` | Gearbox running warm (78 °C) |
 | `MSN-330` | `MISSION_SYSTEM` | Mission-critical fault, 94 °C generator, stale comms telemetry |
 
-None of that condition is visible through the current API. That is the problem.
+At rev C none of that condition was visible through the API. At rev D the
+derived readiness is published (`FMC`, `PMC`, `NMC` respectively); the fault
+and telemetry age stay internal.
 
 ## Run it
 
@@ -72,13 +73,13 @@ All four run in CI under the check context
 
 ## Interface control
 
-`docs/icd/ICD-PHM-002.md` is a **controlled interface document**, currently at
-rev C. `tests/contract/test_icd_phm_002_compatibility.py` asserts the declared
+`docs/icd/ICD-PHM-002.md` is a **controlled interface document**. Rev C is
+baselined; rev D (SYS-4412) is drafted and awaits Interface Control Board approval. `tests/contract/test_icd_phm_002_compatibility.py` asserts the declared
 field set exactly, on both endpoints.
 
 Two downstream consumers validate the response schema strictly, so an additive
-field is **not** automatically non-breaking. Adding `readinessState` will turn
-the contract suite red. That is the intended control, not a defect:
+field is **not** automatically non-breaking. Adding `readinessState` turns
+the contract suite red until the board approves rev D and updates `tests/contract/`. That is the intended control, not a defect:
 
 - weakening or deleting the contract test is forbidden by
   `.github/copilot-instructions.md`,
@@ -102,7 +103,7 @@ impact assessment.
 demo/sys-4412-issue.md             body for the SYS-4412 engineering change issue
 docs/
   architecture.md
-  icd/ICD-PHM-002.md               controlled interface document (rev C)
+  icd/ICD-PHM-002.md               controlled interface document (rev D draft)
 src/                               models · repository · readiness_service · main
 tests/                             unit · integration · contract
 ```

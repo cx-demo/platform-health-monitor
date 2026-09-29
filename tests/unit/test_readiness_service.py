@@ -1,7 +1,22 @@
-"""Unit tests for the platform summary projection (SYS-4400)."""
+"""Unit tests for the platform summary projection (SYS-4400) and the
+PHM-RDY-1 readiness classifier (SYS-4412)."""
 
-from src.models import Platform, Subsystem
-from src.readiness_service import get_platform_summary
+import math
+
+import pytest
+
+from src.models import (
+    Platform,
+    ReadinessConfidence,
+    ReadinessState,
+    Subsystem,
+)
+from src.readiness_service import (
+    READINESS_RULE_VERSION,
+    STALE_TELEMETRY_AGE_SECONDS,
+    classify_readiness,
+    get_platform_summary,
+)
 from src.repository import PLATFORMS, get_platform, list_platforms
 
 SUBSYSTEM_FIELDS = {"subsystemId", "name", "temperatureCelsius", "operational"}
@@ -116,3 +131,285 @@ def test_list_platforms_covers_all_three_domains():
 
     assert platform_types == {"LAND", "AIR", "MISSION_SYSTEM"}
     assert len(list_platforms()) == len(PLATFORMS)
+
+
+# ── SYS-4412 · PHM-RDY-1 readiness classifier ─────────────────────────────
+
+FMC, PMC, NMC = ReadinessState.FMC, ReadinessState.PMC, ReadinessState.NMC
+HIGH, LOW = ReadinessConfidence.HIGH, ReadinessConfidence.LOW
+
+
+def _sub(subsystem_id="S-01", **overrides) -> Subsystem:
+    fields = dict(subsystem_id=subsystem_id, name="Subsystem", temperature_celsius=50.0)
+    fields.update(overrides)
+    return Subsystem(**fields)
+
+
+def _malformed_sub(**overrides) -> Subsystem:
+    """Bypass model validation to simulate a malformed upstream record."""
+    fields = dict(
+        subsystem_id="BAD-01",
+        name="Malformed",
+        temperature_celsius=50.0,
+        operational=True,
+        mission_critical_fault=False,
+        telemetry_age_seconds=0,
+    )
+    fields.update(overrides)
+    return Subsystem.model_construct(**fields)
+
+
+def _classify(*subsystems, operational=True):
+    return classify_readiness(
+        _platform(operational=operational, subsystems=list(subsystems))
+    )
+
+
+def test_rule_version_is_phm_rdy_1():
+    assert READINESS_RULE_VERSION == "PHM-RDY-1"
+
+
+def test_permitted_readiness_values_are_exactly_fmc_pmc_nmc():
+    assert {state.value for state in ReadinessState} == {"FMC", "PMC", "NMC"}
+    assert {c.value for c in ReadinessConfidence} == {"HIGH", "LOW"}
+
+
+def test_rule_7_all_nominal_is_fmc_high():
+    result = _classify(_sub("A"), _sub("B", temperature_celsius=20.0))
+
+    assert (result.state, result.confidence) == (FMC, HIGH)
+
+
+def test_rule_1_mission_critical_fault_is_nmc():
+    result = _classify(_sub("A"), _sub("B", mission_critical_fault=True))
+
+    assert (result.state, result.confidence) == (NMC, HIGH)
+
+
+def test_rule_1_fault_overrides_otherwise_nominal_readings():
+    result = _classify(_sub(temperature_celsius=20.0, mission_critical_fault=True))
+
+    assert result.state is NMC
+
+
+def test_rule_3_platform_not_operational_is_nmc():
+    result = _classify(_sub(), operational=False)
+
+    assert (result.state, result.confidence) == (NMC, HIGH)
+
+
+def test_rule_3_subsystem_not_operational_without_fault_is_nmc():
+    result = _classify(_sub("A"), _sub("B", operational=False))
+
+    assert (result.state, result.confidence) == (NMC, HIGH)
+
+
+def test_rule_3_takes_precedence_over_rule_4():
+    result = _classify(_sub(temperature_celsius=75.0), operational=False)
+
+    assert result.state is NMC
+
+
+@pytest.mark.parametrize(
+    ("temperature", "expected"),
+    [
+        (69.9, FMC),
+        (70.0, PMC),
+        (89.9, PMC),
+        (90.0, NMC),
+    ],
+)
+def test_temperature_boundaries(temperature, expected):
+    result = _classify(_sub(temperature_celsius=temperature))
+
+    assert result.state is expected
+    assert result.confidence is HIGH
+
+
+def test_rule_2_hottest_subsystem_governs():
+    result = _classify(_sub("A", temperature_celsius=75.0), _sub("B", temperature_celsius=95.0))
+
+    assert result.state is NMC
+
+
+def test_rule_4_one_warm_subsystem_is_pmc():
+    result = _classify(_sub("A", temperature_celsius=20.0), _sub("B", temperature_celsius=70.0))
+
+    assert (result.state, result.confidence) == (PMC, HIGH)
+
+
+def test_rule_5_is_reserved_and_never_matches_on_nominal_data():
+    assert _classify(_sub()).state is FMC
+
+
+@pytest.mark.parametrize(
+    "temperature",
+    [None, math.nan, math.inf, -math.inf],
+    ids=["missing", "nan", "plus-inf", "minus-inf"],
+)
+def test_rule_6_missing_or_non_finite_temperature_is_pmc_low(temperature):
+    result = _classify(_sub("A"), _sub("B", temperature_celsius=temperature))
+
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+@pytest.mark.parametrize(
+    ("age", "expected"),
+    [
+        (0, (FMC, HIGH)),
+        (STALE_TELEMETRY_AGE_SECONDS - 1, (FMC, HIGH)),
+        (STALE_TELEMETRY_AGE_SECONDS, (PMC, LOW)),
+        (STALE_TELEMETRY_AGE_SECONDS + 1, (PMC, LOW)),
+        (3600, (PMC, LOW)),
+    ],
+)
+def test_rule_6_staleness_boundary_at_300_seconds(age, expected):
+    result = _classify(_sub(telemetry_age_seconds=age))
+
+    assert STALE_TELEMETRY_AGE_SECONDS == 300
+    assert (result.state, result.confidence) == expected
+
+
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"temperature_celsius": "hot"},
+        {"temperature_celsius": True},
+        {"telemetry_age_seconds": "recent"},
+        {"telemetry_age_seconds": None},
+        {"telemetry_age_seconds": -1},
+        {"telemetry_age_seconds": math.nan},
+    ],
+    ids=[
+        "temperature-string",
+        "temperature-bool",
+        "age-string",
+        "age-none",
+        "age-negative",
+        "age-nan",
+    ],
+)
+def test_rule_6_malformed_telemetry_is_pmc_low(overrides):
+    result = _classify(_sub("A"), _malformed_sub(**overrides))
+
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+def test_rule_6_no_subsystems_is_pmc_low():
+    result = _classify()
+
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"temperature_celsius": None},
+        {"temperature_celsius": math.nan},
+        {"temperature_celsius": math.inf},
+        {"temperature_celsius": -math.inf},
+        {"telemetry_age_seconds": 300},
+        {"telemetry_age_seconds": -5},
+    ],
+)
+def test_bad_telemetry_never_yields_fmc(bad):
+    assert _classify(_sub(**bad)).state is not FMC
+
+
+def test_confidence_is_low_when_state_is_nmc_and_telemetry_is_bad():
+    result = _classify(
+        _sub("A", mission_critical_fault=True),
+        _sub("B", telemetry_age_seconds=3600),
+    )
+
+    assert (result.state, result.confidence) == (NMC, LOW)
+
+
+def test_stale_high_reading_still_counts_for_rule_2():
+    result = _classify(_sub(temperature_celsius=95.0, telemetry_age_seconds=3600))
+
+    assert (result.state, result.confidence) == (NMC, LOW)
+
+
+def test_stale_warm_reading_still_counts_for_rule_4():
+    result = _classify(_sub(temperature_celsius=80.0, telemetry_age_seconds=3600))
+
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+def test_non_finite_reading_does_not_trigger_temperature_rules():
+    result = _classify(_sub("A", temperature_celsius=20.0), _sub("B", temperature_celsius=math.inf))
+
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+def test_classification_is_deterministic():
+    platform = _platform(
+        subsystems=[_sub("A", temperature_celsius=75.0), _sub("B", temperature_celsius=None)]
+    )
+
+    assert {classify_readiness(platform) for _ in range(5)} == {classify_readiness(platform)}
+
+
+@pytest.mark.parametrize(
+    ("platform_id", "state", "confidence"),
+    [
+        ("LND-114", "FMC", "HIGH"),
+        ("AIR-207", "PMC", "HIGH"),
+        ("MSN-330", "NMC", "LOW"),
+    ],
+)
+def test_fleet_classification(platform_id, state, confidence):
+    summary = get_platform_summary(get_platform(platform_id))
+
+    assert summary["readinessState"] == state
+    assert summary["readinessConfidence"] == confidence
+
+
+def test_summary_publishes_readiness_fields_as_plain_strings():
+    summary = get_platform_summary(_platform())
+
+    assert type(summary["readinessState"]) is str
+    assert type(summary["readinessConfidence"]) is str
+    assert (summary["readinessState"], summary["readinessConfidence"]) == ("FMC", "HIGH")
+
+
+def test_summary_platform_fields_are_rev_c_plus_rev_d_readiness():
+    assert set(get_platform_summary(_platform())) == {
+        "platformId",
+        "designation",
+        "platformType",
+        "operational",
+        "subsystems",
+        "readinessState",
+        "readinessConfidence",
+    }
+
+
+@pytest.mark.parametrize("temperature", [math.nan, math.inf, -math.inf])
+def test_summary_publishes_non_finite_temperature_as_null(temperature):
+    platform = _platform(subsystems=[_sub(temperature_celsius=temperature)])
+
+    summary = get_platform_summary(platform)
+
+    assert summary["subsystems"][0]["temperatureCelsius"] is None
+    assert summary["readinessState"] == "PMC"
+    assert summary["readinessConfidence"] == "LOW"
+
+
+def test_summary_never_exposes_classification_internals():
+    summary = get_platform_summary(
+        _platform(subsystems=[_sub(mission_critical_fault=True, telemetry_age_seconds=3600)])
+    )
+    flattened = repr(summary)
+
+    for leaked in (
+        "missionCriticalFault",
+        "telemetryAgeSeconds",
+        "mission_critical_fault",
+        "telemetry_age_seconds",
+        "PHM-RDY-1",
+        "rule",
+        "reason",
+    ):
+        assert leaked not in flattened

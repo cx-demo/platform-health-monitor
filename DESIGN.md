@@ -1,6 +1,6 @@
 ---
 name: Platform Health & Mission Readiness Service
-description: Read-only fleet plate in statistical-atlas language, constrained to ICD-PHM-002 revision C.
+description: Read-only fleet plate in statistical-atlas language, constrained to ICD-PHM-002 revision D.
 colors:
   paper: "#e5e1d8"
   plate: "#f4f2ec"
@@ -88,7 +88,7 @@ The shipped `GET /dashboard` surface is a read-only fleet plate, not an operatio
 
 Mode is **Operate**. Engineers scan published facts, compare three platforms on one shared scale, see the measured extremity, and also see the contract gap drawn as hatched reserved space. Interface absence is not hidden and not dramatised; it is dimensioned as an engineering fact.
 
-Binding constraints are law for this surface: it is read-only; it may render only fields published by ICD-PHM-002 revision C (`platformId`, `designation`, `platformType`, `operational`, and subsystem `subsystemId`, `name`, `temperatureCelsius`, `operational`); the forbidden contract-growth string `readinessState` must never appear in shipped source or tests; no third-party origins or webfonts; presentation routes such as `/` and `/dashboard` stay out of `/openapi.json`.
+Binding constraints are law for this surface: it is read-only; it may render only fields published by ICD-PHM-002 revision D (`platformId`, `designation`, `platformType`, `operational`, `readinessState`, `readinessConfidence`, and subsystem `subsystemId`, `name`, `temperatureCelsius`, `operational`); `readinessState` and `readinessConfidence` are rendered as neutral text only; no third-party origins or webfonts; presentation routes such as `/` and `/dashboard` stay out of `/openapi.json`.
 
 **Key Characteristics:**
 - Light ground with printed plate, black ink, hairline rules, square corners.
@@ -182,7 +182,11 @@ Fleet count is drawn with inline SVG unit signs, not icons from a library. Solid
 
 ### Status Mark
 
-Serviceability state is a 0.625rem square mark plus text. Filled mark plus “Reports operational”; outlined mark plus “Reports not operational”. Never substitute traffic-light hue, badges, lamps, or a readiness verdict.
+Serviceability state is a 0.625rem square mark plus text. Filled mark plus “Reports operational”; outlined mark plus “Reports not operational”. Never substitute traffic-light hue, badges or lamps.
+
+### Readiness Text
+
+The published `readinessState` and `readinessConfidence` (ICD-PHM-002 rev D, SYS-4412) appear under each platform identifier as one line of mono ink text: “Readiness NMC · confidence LOW”. No colour, mark, badge, lamp, icon or ranking. The plate repeats the service's verdict; it never derives its own.
 
 ### Measured Bar Row
 
@@ -208,14 +212,14 @@ The only authored motion is `rule-out`: bar and void elements animate from `scal
 
 ### Do:
 - **Do** keep the surface read-only and sourced from `GET /platforms` plus links to published platform records.
-- **Do** render only ICD-PHM-002 revision C fields and preserve the visible contract gap.
+- **Do** render only ICD-PHM-002 revision D fields and preserve the visible contract gap for fields that remain unpublished.
 - **Do** encode state as mark plus text; colour may reinforce measurements only.
 - **Do** use system grotesque and platform mono stacks only.
 - **Do** keep presentation routes out of the generated interface contract; `/openapi.json` must remain machine-readable ICD-PHM-002, not UI navigation.
-- **Do** draw absence as hatched reserved space when a question is not answerable from revision C.
+- **Do** draw absence as hatched reserved space when a question is not answerable from revision D.
 
 ### Don't:
-- **Don't** introduce the forbidden `readinessState` field into shipped source or tests, infer a readiness verdict, or publish any tasking conclusion.
+- **Don't** infer a readiness verdict of the plate's own, style `readinessState` or `readinessConfidence` with colour or badges, or publish any tasking conclusion.
 - **Don't** use traffic lights, gauges, gauge rings, sparklines, vital-sign traces, ECG metaphors, lamps, severity badges, or red/amber/green status language.
 - **Don't** re-propose the dark neon ops-centre dashboard; it was rejected as the category default and would imply live command authority the product does not have.
 - **Don't** re-propose white SaaS analytics cards; they were rejected as the predictable opposite and would make the contract gap feel like business intelligence, not interface governance.

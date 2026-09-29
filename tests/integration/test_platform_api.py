@@ -1,9 +1,14 @@
-"""Integration tests for the sustainment API surface (ICD-PHM-002 rev C)."""
+"""Integration tests for the sustainment API surface (ICD-PHM-002 rev C,
+plus SYS-4412 readiness fields drafted for rev D)."""
+
+import math
 
 import pytest
 from fastapi.testclient import TestClient
 
+import src.main
 from src.main import app
+from src.models import Platform, Subsystem
 
 client = TestClient(app)
 
@@ -69,3 +74,114 @@ def test_openapi_document_is_served():
     assert document["info"]["version"] == "2.3.0"
     assert "/platforms" in document["paths"]
     assert "/platforms/{platform_id}" in document["paths"]
+
+
+# ── SYS-4412 · readiness fields (ICD-PHM-002 rev D draft) ─────────────────
+
+REV_C_PLATFORM_FIELDS = {
+    "platformId",
+    "designation",
+    "platformType",
+    "operational",
+    "subsystems",
+}
+REV_D_READINESS_FIELDS = {"readinessState", "readinessConfidence"}
+EXPECTED_READINESS = {
+    "LND-114": ("FMC", "HIGH"),
+    "AIR-207": ("PMC", "HIGH"),
+    "MSN-330": ("NMC", "LOW"),
+}
+LEAK_MARKERS = (
+    "missionCriticalFault",
+    "mission_critical_fault",
+    "telemetryAgeSeconds",
+    "telemetry_age_seconds",
+    "PHM-RDY-1",
+    "Traceback",
+)
+
+
+def test_list_endpoint_publishes_readiness_on_every_record():
+    for record in client.get("/platforms").json():
+        assert set(record) == REV_C_PLATFORM_FIELDS | REV_D_READINESS_FIELDS
+        assert (record["readinessState"], record["readinessConfidence"]) == (
+            EXPECTED_READINESS[record["platformId"]]
+        )
+
+
+@pytest.mark.parametrize("platform_id", ALL_PLATFORM_IDS)
+def test_detail_endpoint_publishes_readiness(platform_id):
+    record = client.get(f"/platforms/{platform_id}").json()
+
+    assert set(record) == REV_C_PLATFORM_FIELDS | REV_D_READINESS_FIELDS
+    assert (record["readinessState"], record["readinessConfidence"]) == (
+        EXPECTED_READINESS[platform_id]
+    )
+
+
+def test_readiness_values_are_within_the_permitted_sets():
+    for record in client.get("/platforms").json():
+        assert record["readinessState"] in {"FMC", "PMC", "NMC"}
+        assert record["readinessConfidence"] in {"HIGH", "LOW"}
+
+
+def test_rev_c_fields_are_unchanged():
+    record = client.get("/platforms/LND-114").json()
+
+    assert {key: record[key] for key in REV_C_PLATFORM_FIELDS} == {
+        "platformId": "LND-114",
+        "designation": "Recovery Vehicle 114",
+        "platformType": "LAND",
+        "operational": True,
+        "subsystems": [
+            {
+                "subsystemId": "PWR-01",
+                "name": "Powerpack",
+                "temperatureCelsius": 64.0,
+                "operational": True,
+            },
+            {
+                "subsystemId": "HYD-01",
+                "name": "Hydraulic System",
+                "temperatureCelsius": 51.0,
+                "operational": True,
+            },
+        ],
+    }
+
+
+@pytest.mark.parametrize("path", ["/platforms", "/platforms/MSN-330"])
+def test_readiness_payload_leaks_no_fault_age_or_rule_internals(path):
+    body = client.get(path).text
+
+    for marker in LEAK_MARKERS:
+        assert marker not in body
+
+
+@pytest.mark.parametrize(
+    "temperature",
+    [math.nan, math.inf, -math.inf],
+    ids=["nan", "plus-inf", "minus-inf"],
+)
+def test_non_finite_temperature_serialises_and_is_classified(monkeypatch, temperature):
+    platform = Platform(
+        platform_id="TST-900",
+        designation="Test Platform 900",
+        platform_type="LAND",
+        operational=True,
+        subsystems=[
+            Subsystem(subsystem_id="PWR-01", name="Powerpack", temperature_celsius=temperature)
+        ],
+    )
+    monkeypatch.setattr(src.main, "get_platform", lambda _id: platform)
+    monkeypatch.setattr(src.main, "list_platforms", lambda: [platform])
+
+    detail = client.get("/platforms/TST-900")
+    listed = client.get("/platforms")
+
+    assert detail.status_code == 200
+    assert listed.status_code == 200
+    assert listed.json() == [detail.json()]
+    record = detail.json()
+    assert record["subsystems"][0]["temperatureCelsius"] is None
+    assert (record["readinessState"], record["readinessConfidence"]) == ("PMC", "LOW")

@@ -1,3 +1,6 @@
+from dataclasses import dataclass
+from enum import StrEnum
+
 from pydantic import BaseModel
 
 
@@ -16,3 +19,22 @@ class Platform(BaseModel):
     platform_type: str
     operational: bool
     subsystems: list[Subsystem]
+
+
+class ReadinessState(StrEnum):
+    """SYS-4412 readiness values published at ICD-PHM-002 rev D."""
+
+    FMC = "FMC"
+    PMC = "PMC"
+    NMC = "NMC"
+
+
+class ReadinessConfidence(StrEnum):
+    HIGH = "HIGH"
+    LOW = "LOW"
+
+
+@dataclass(frozen=True)
+class ReadinessAssessment:
+    state: ReadinessState
+    confidence: ReadinessConfidence

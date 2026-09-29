@@ -16,7 +16,7 @@ STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 # The fleet plate is a presentation surface, not part of the controlled
 # interface. It is excluded from the generated OpenAPI document so that
-# /openapi.json continues to describe exactly the ICD-PHM-002 rev C
+# /openapi.json continues to describe exactly the ICD-PHM-002 interface
 # surface and nothing else. Publishing it would be an interface change.
 @app.get("/", include_in_schema=False)
 def redirect_to_dashboard():

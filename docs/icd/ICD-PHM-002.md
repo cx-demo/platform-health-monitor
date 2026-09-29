@@ -3,11 +3,12 @@
 | Field | Value |
 |---|---|
 | Document | ICD-PHM-002 |
-| Revision | **C** |
-| Status | Baselined |
+| Revision | **D (draft — pending Interface Control Board approval)** |
+| Status | Proposed. Rev C remains baselined until rev D is approved. |
 | Owner | Interface Control Board |
 | Service version | PHMS 2.3.0 |
 | Machine-readable form | `GET /openapi.json` |
+| Readiness rule | `PHM-RDY-1` |
 
 This is a **controlled interface document**. Any change to the public API
 payload is an interface change and requires a revision of this document plus a
@@ -19,7 +20,8 @@ consumer impact assessment before merge.
 |---|---|---|---|
 | A | Initial platform list endpoint | SYS-4400 | Superseded |
 | B | Added platform detail endpoint and subsystem array | SYS-4400 | Superseded |
-| C | Added `platformType`; baselined subsystem field set | SYS-4400 | **Current** |
+| C | Added `platformType`; baselined subsystem field set | SYS-4400 | Baselined — superseded on rev D approval |
+| D | Added derived `readinessState` and `readinessConfidence` to the platform record (rule `PHM-RDY-1`) | SYS-4412 | **Draft — awaiting ICB approval** |
 
 ## Consumers
 
@@ -32,6 +34,22 @@ consumer impact assessment before merge.
 
 Two consumers validate strictly. An additive field is therefore **not**
 automatically non-breaking.
+
+## Consumer impact statement (rev C → rev D)
+
+Rev D adds two fields to every platform record. It removes and renames nothing.
+Every rev C field keeps its name, type, nullability and meaning.
+
+| Consumer | Impact | Action required before rev D is deployed |
+|---|---|---|
+| Maintenance planning | **Breaking.** Strict validation rejects the two new fields. | Update schema to rev D. Coordinated deployment. |
+| Customer sustainment portal | **Breaking.** Strict validation rejects the two new fields. | Update schema to rev D. Coordinated deployment. |
+| Sortie generation | Non-breaking. Lenient validation ignores unknown fields. | Adopt `readinessState` in place of local derivation (recommended). |
+| Availability reporting | Non-breaking. Figures are contractual. | Confirm `PHM-RDY-1` matches the SYS-4400 contracted availability definition before adopting. **Alignment unverified.** |
+
+Rollout is coordinated, not opt-in. Rev D must not be deployed until both
+strict consumers accept rev D payloads. Rollback is a redeploy of the rev C
+service, which removes both fields from any consumer that has adopted them.
 
 ## Endpoints
 
@@ -46,24 +64,82 @@ Returns a single platform record. `200 OK`, or `404 Not Found` with
 
 ## Platform record
 
-| Field | Type | Nullable | Description |
-|---|---|---|---|
-| `platformId` | string | No | Fleet-unique platform identifier |
-| `designation` | string | No | Human-readable platform designation |
-| `platformType` | string | No | `LAND`, `AIR` or `MISSION_SYSTEM` |
-| `operational` | boolean | No | Platform-level operational flag |
-| `subsystems` | array | No | Subsystem records, order significant |
+| Field | Type | Nullable | Since | Description |
+|---|---|---|---|---|
+| `platformId` | string | No | A | Fleet-unique platform identifier |
+| `designation` | string | No | A | Human-readable platform designation |
+| `platformType` | string | No | C | `LAND`, `AIR` or `MISSION_SYSTEM` |
+| `operational` | boolean | No | A | Platform-level operational flag |
+| `subsystems` | array | No | B | Subsystem records, order significant |
+| `readinessState` | string | No | D | `FMC`, `PMC` or `NMC`, derived by rule `PHM-RDY-1` |
+| `readinessConfidence` | string | No | D | `HIGH` or `LOW`. `LOW` when any subsystem telemetry is missing, stale, malformed or non-finite |
 
-No other fields are permitted at rev C.
+Both rev D fields are present on every platform record, on both endpoints. No
+other fields are permitted at rev D.
 
 ## Subsystem record
+
+Unchanged from rev C.
 
 | Field | Type | Nullable | Description |
 |---|---|---|---|
 | `subsystemId` | string | No | Platform-unique subsystem identifier |
 | `name` | string | No | Subsystem name |
-| `temperatureCelsius` | number | **Yes** | Most recent reading; `null` when unavailable |
+| `temperatureCelsius` | number | **Yes** | Most recent reading; `null` when unavailable. A non-finite reading (NaN, ±infinity) is unavailable and is published as `null`. |
 | `operational` | boolean | No | Subsystem-level operational flag |
+
+## Readiness derivation — rule `PHM-RDY-1`
+
+Traceability: SYS-4412, parent SYS-4400. Implemented once, in
+`classify_readiness()` in `src/readiness_service.py`. Both endpoints use it.
+
+Classification is advisory decision-support output. The rule is evaluated per
+platform. The first matching precedence wins.
+
+| Precedence | Condition | `readinessState` |
+|---|---|---|
+| 1 | Any subsystem has a mission-critical fault | `NMC` |
+| 2 | Any valid subsystem temperature >= 90.0 °C | `NMC` |
+| 3 | Platform not operational, or any subsystem not operational | `NMC` |
+| 4 | Any valid subsystem temperature >= 70.0 °C and < 90.0 °C | `PMC` |
+| 5 | *Reserved.* Degraded but mission-capable. No degraded signal is specified yet, so this rule never matches. | `PMC` |
+| 6 | Telemetry missing, stale, malformed or non-finite for any subsystem, or no subsystems reported | `PMC` |
+| 7 | Otherwise: all subsystems nominal and operational | `FMC` |
+
+`readinessConfidence` is evaluated separately from precedence. It is `LOW`
+whenever any telemetry is bad, whatever the state, including `NMC`. Otherwise
+it is `HIGH`.
+
+Definitions:
+
+- **Valid temperature** — a finite number. Rules 2 and 4 use valid readings
+  even when they are stale, so an old high reading is never discarded in the
+  platform's favour.
+- **Missing** — no temperature reading (`null`).
+- **Non-finite** — NaN, +infinity or −infinity.
+- **Malformed** — a temperature or telemetry age that is not a number, or a
+  negative telemetry age.
+- **Stale** — telemetry age of **300 seconds or more**. A reading exactly
+  300 seconds old is stale.
+
+Boundary behaviour:
+
+| Highest valid temperature | `readinessState` (no other rule matching) |
+|---|---|
+| 69.9 °C | `FMC` |
+| 70.0 °C | `PMC` (rule 4) |
+| 89.9 °C | `PMC` (rule 4) |
+| 90.0 °C | `NMC` (rule 2) |
+
+Missing, stale, malformed or non-finite telemetry never yields `FMC`.
+
+The rule version `PHM-RDY-1` is published here, not in the payload. Any change
+to the precedence, thresholds or definitions above requires a new rule version
+and a new ICD revision.
+
+Thresholds are synthetic. Alignment of `PHM-RDY-1` with the SYS-4400
+contracted availability definition is **unverified** and is recorded as a
+residual risk.
 
 ## Excluded from the interface
 
@@ -72,6 +148,7 @@ exposed:
 
 - `mission_critical_fault` — internal fault indication
 - `telemetry_age_seconds` — internal telemetry staleness
+- The matched precedence rule and any classification reasons
 - Stack traces, exception detail, fault codes, internal diagnostics
 
 ## Example
@@ -97,7 +174,9 @@ exposed:
       "temperatureCelsius": 51.0,
       "operational": true
     }
-  ]
+  ],
+  "readinessState": "FMC",
+  "readinessConfidence": "HIGH"
 }
 ```
 
@@ -111,8 +190,12 @@ ordinary test failure.
 This test must never be weakened or deleted to make a change pass. A failure is
 an interface-change escalation, not a test defect.
 
+The rev D implementation fails this test by design. The Interface Control Board
+updates `tests/contract/` to the rev D field set after approving this revision.
+Until then the contract failure is the recorded escalation.
+
 ## Open interface changes
 
 | Requirement | Proposed change | Status |
 |---|---|---|
-| SYS-4412 | Add derived `readinessState` to the platform record | Not implemented — requires rev D and consumer impact assessment |
+| SYS-4412 | Add derived `readinessState` and `readinessConfidence` to the platform record | Rev D drafted — awaiting ICB approval and contract-test update |
