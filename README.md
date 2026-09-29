@@ -45,6 +45,17 @@ uvicorn src.main:app --reload
 - `GET http://127.0.0.1:8000/platforms/LND-114`
 - `GET http://127.0.0.1:8000/openapi.json` — machine-readable form of the ICD
 
+### Fleet plate
+
+- `GET http://127.0.0.1:8000/dashboard` — a read-only visualisation of the fleet
+
+The plate is a browser-side consumer of `GET /platforms`, not an extension of
+the interface. It holds no privileged access and reads the same payload any
+integrator receives, so whatever it cannot show you, no consumer can show you.
+It is deliberately excluded from `/openapi.json`: that document is the
+machine-readable form of ICD-PHM-002, and adding a path to it would be an
+interface change. See `docs/evidence/sys-4418-dashboard.md`.
+
 ## Test it
 
 ```bash
