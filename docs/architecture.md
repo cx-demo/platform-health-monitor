@@ -27,6 +27,9 @@ projected by `get_platform_summary`. Leaking fault codes or diagnostic detail
 through the public API is a security and interface concern, not a convenience.
 Both are optional: an absent value means "not reported" and is classified as
 missing telemetry by rule `PHM-RDY-1` (SYS-4412), never as fresh or fault-free.
+The subsystem `operational` flag is optional in the same way. Fault and
+operational flags that are not real booleans are held as not reported, never
+coerced to `true` or `false`.
 
 The projection function is the single point at which internal state becomes
 external contract. Any change there is an ICD-PHM-002 interface change.

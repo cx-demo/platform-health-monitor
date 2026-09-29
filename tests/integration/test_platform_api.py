@@ -159,11 +159,11 @@ def test_readiness_payload_leaks_no_fault_age_or_rule_internals(path):
 
 
 @pytest.mark.parametrize(
-    "temperature",
-    [math.nan, math.inf, -math.inf],
+    ("temperature", "state"),
+    [(math.nan, "PMC"), (math.inf, "NMC"), (-math.inf, "PMC")],
     ids=["nan", "plus-inf", "minus-inf"],
 )
-def test_non_finite_temperature_serialises_and_is_classified(monkeypatch, temperature):
+def test_non_finite_temperature_serialises_and_is_classified(monkeypatch, temperature, state):
     platform = Platform(
         platform_id="TST-900",
         designation="Test Platform 900",
@@ -174,6 +174,7 @@ def test_non_finite_temperature_serialises_and_is_classified(monkeypatch, temper
                 subsystem_id="PWR-01",
                 name="Powerpack",
                 temperature_celsius=temperature,
+                operational=True,
                 mission_critical_fault=False,
                 telemetry_age_seconds=0,
             )
@@ -190,18 +191,19 @@ def test_non_finite_temperature_serialises_and_is_classified(monkeypatch, temper
     assert listed.json() == [detail.json()]
     record = detail.json()
     assert record["subsystems"][0]["temperatureCelsius"] is None
-    assert (record["readinessState"], record["readinessConfidence"]) == ("PMC", "LOW")
+    assert (record["readinessState"], record["readinessConfidence"]) == (state, "LOW")
 
 
 @pytest.mark.parametrize(
     "absent",
-    ["telemetry_age_seconds", "mission_critical_fault"],
+    ["telemetry_age_seconds", "mission_critical_fault", "operational"],
 )
 def test_absent_age_or_fault_flag_is_published_as_pmc_low(monkeypatch, absent):
     record = {
         "subsystem_id": "PWR-01",
         "name": "Powerpack",
         "temperature_celsius": 55.0,
+        "operational": True,
         "mission_critical_fault": False,
         "telemetry_age_seconds": 0,
     }
@@ -225,5 +227,49 @@ def test_absent_age_or_fault_flag_is_published_as_pmc_low(monkeypatch, absent):
     assert listed.json() == [detail.json()]
     body = detail.json()
     assert (body["readinessState"], body["readinessConfidence"]) == ("PMC", "LOW")
+    for marker in LEAK_MARKERS:
+        assert marker not in detail.text
+
+
+@pytest.mark.parametrize(
+    ("flag", "value"),
+    [
+        ("mission_critical_fault", 0),
+        ("mission_critical_fault", "yes"),
+        ("operational", 1),
+        ("operational", "yes"),
+    ],
+    ids=["fault-int-0", "fault-str-yes", "operational-int-1", "operational-str-yes"],
+)
+def test_non_boolean_subsystem_flag_is_published_as_pmc_low(monkeypatch, flag, value):
+    record = {
+        "subsystem_id": "PWR-01",
+        "name": "Powerpack",
+        "temperature_celsius": 55.0,
+        "operational": True,
+        "mission_critical_fault": False,
+        "telemetry_age_seconds": 0,
+        flag: value,
+    }
+    platform = Platform.model_validate(
+        {
+            "platform_id": "TST-902",
+            "designation": "Test Platform 902",
+            "platform_type": "LAND",
+            "operational": True,
+            "subsystems": [record],
+        }
+    )
+    monkeypatch.setattr(src.main, "get_platform", lambda _id: platform)
+    monkeypatch.setattr(src.main, "list_platforms", lambda: [platform])
+
+    detail = client.get("/platforms/TST-902")
+    listed = client.get("/platforms")
+
+    assert detail.status_code == 200
+    assert listed.json() == [detail.json()]
+    body = detail.json()
+    assert (body["readinessState"], body["readinessConfidence"]) == ("PMC", "LOW")
+    assert body["subsystems"][0]["operational"] is (flag != "operational")
     for marker in LEAK_MARKERS:
         assert marker not in detail.text

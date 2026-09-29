@@ -27,9 +27,17 @@ def _valid_temperature(subsystem: Subsystem) -> float | None:
     return None
 
 
+def _reads_at_or_above(subsystem: Subsystem, threshold: float) -> bool:
+    """Finite or +inf reading at or above threshold. NaN and -inf never match."""
+    value = subsystem.temperature_celsius
+    return _is_number(value) and not math.isnan(value) and value >= threshold
+
+
 def _has_bad_telemetry(subsystem: Subsystem) -> bool:
     """Missing, non-finite, malformed or stale telemetry (PHM-RDY-1 rule 6)."""
     if _valid_temperature(subsystem) is None:
+        return True
+    if not isinstance(subsystem.operational, bool):
         return True
     if not isinstance(subsystem.mission_critical_fault, bool):
         return True
@@ -42,21 +50,24 @@ def _has_bad_telemetry(subsystem: Subsystem) -> bool:
 def classify_readiness(platform: Platform) -> ReadinessAssessment:
     """Apply rule PHM-RDY-1 (SYS-4412). First matching precedence wins."""
     subsystems = platform.subsystems
-    temperatures = [
-        t for t in (_valid_temperature(s) for s in subsystems) if t is not None
-    ]
-    bad_telemetry = not subsystems or any(_has_bad_telemetry(s) for s in subsystems)
+    bad_telemetry = (
+        not subsystems
+        or not isinstance(platform.operational, bool)
+        or any(_has_bad_telemetry(s) for s in subsystems)
+    )
     confidence = (
         ReadinessConfidence.LOW if bad_telemetry else ReadinessConfidence.HIGH
     )
 
-    if any(s.mission_critical_fault for s in subsystems):
+    if any(s.mission_critical_fault is True for s in subsystems):
         state = ReadinessState.NMC
-    elif any(t >= NMC_TEMPERATURE_CELSIUS for t in temperatures):
+    elif any(_reads_at_or_above(s, NMC_TEMPERATURE_CELSIUS) for s in subsystems):
         state = ReadinessState.NMC
-    elif not platform.operational or any(not s.operational for s in subsystems):
+    elif platform.operational is False or any(
+        s.operational is False for s in subsystems
+    ):
         state = ReadinessState.NMC
-    elif any(t >= PMC_TEMPERATURE_CELSIUS for t in temperatures):
+    elif any(_reads_at_or_above(s, PMC_TEMPERATURE_CELSIUS) for s in subsystems):
         state = ReadinessState.PMC
     # Rule 5 (degraded but mission-capable) is reserved: no degraded signal
     # is specified, so it never matches.
@@ -74,13 +85,14 @@ def get_platform_summary(platform: Platform) -> dict:
         "platformId": platform.platform_id,
         "designation": platform.designation,
         "platformType": platform.platform_type,
-        "operational": platform.operational,
+        # An unreported or malformed flag is never published as true.
+        "operational": platform.operational is True,
         "subsystems": [
             {
                 "subsystemId": s.subsystem_id,
                 "name": s.name,
                 "temperatureCelsius": _valid_temperature(s),
-                "operational": s.operational,
+                "operational": s.operational is True,
             }
             for s in platform.subsystems
         ],
