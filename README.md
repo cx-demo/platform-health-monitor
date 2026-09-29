@@ -130,11 +130,39 @@ Sessions run in isolated worktrees and cannot read each other's chat. Therefore:
 These steps require org/admin scope and are **not** applied by this repository's
 contents alone.
 
+> ### ⚠️ GHAS licence is a hard prerequisite
+>
+> This repository is **private** and GitHub Advanced Security has not been
+> purchased for the organisation. Verified:
+>
+> ```
+> PATCH /repos/<org>/platform-health-monitor
+>   security_and_analysis[advanced_security][status]=enabled
+> → 422 "Advanced security has not been purchased."
+> ```
+>
+> Without GHAS, **`CodeQL analysis` and `Dependency Review` cannot pass** —
+> CodeQL runs but its SARIF upload is rejected because code scanning is off,
+> and dependency review is unsupported on a private repository. Two of the four
+> required status checks are therefore permanently red.
+>
+> Fix it one of two ways before the demo:
+>
+> 1. Assign GHAS (Code Security + Secret Protection) to the repository, or
+> 2. Make the repository **public**, where both are free.
+>
+> Do **not** resolve this by deleting the workflows or dropping them from the
+> ruleset. Lowering a gate you cannot currently satisfy is the exact behaviour
+> this repository exists to argue against.
+>
+> Already enabled and working: dependency graph, Dependabot security updates.
+
 ```bash
 REPO=<org>/platform-health-monitor
 
-# 1. Enable GHAS
+# 1. Enable GHAS (requires a purchased licence, or a public repository)
 gh api -X PATCH /repos/$REPO \
+  -f 'security_and_analysis[advanced_security][status]=enabled' \
   -f 'security_and_analysis[secret_scanning][status]=enabled' \
   -f 'security_and_analysis[secret_scanning_push_protection][status]=enabled' \
   -f 'security_and_analysis[dependabot_security_updates][status]=enabled'
@@ -152,10 +180,13 @@ gh issue create --repo $REPO \
 
 Checklist:
 
+- [ ] **GHAS licensed, or repository made public** — blocks two required checks
+- [ ] Code scanning enabled and CodeQL has completed at least one successful
+      run (required checks need history)
+- [ ] Secret scanning and push protection enabled
 - [ ] Teams `@engineering-authority` and `@interface-control-board` exist and
       have members — `CODEOWNERS` cannot resolve otherwise
 - [ ] All four workflows present and green on `main`
-- [ ] CodeQL has completed at least one run (required checks need history)
 - [ ] Ruleset applied and active
 - [ ] `require_last_push_approval` confirmed on
 - [ ] **Verified an administrator merge is actually blocked** — test it, do not

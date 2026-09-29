@@ -48,13 +48,55 @@ Asserted by `tests/contract/test_icd_phm_002_compatibility.py`.
   not projected onto the public payload.
 - The 404 response carries no stack trace or internal path detail.
 
+## Continuous integration result
+
+Observed on the baseline pull request:
+
+| Required check | Result | Note |
+|---|---|---|
+| `Unit, integration and contract tests` | ✅ Pass | 20 tests, coverage gate met |
+| `Requirement Traceability` | ✅ Pass | Requirement ID, matrix update and evidence all present |
+| `CodeQL analysis` | ❌ Fail | Analysis completed; **SARIF upload rejected — code scanning not enabled on the repository** |
+| `Dependency Review` | ❌ Fail | **Not supported — dependency review requires GHAS on a private repository** |
+
+## Blocked: GitHub Advanced Security not licensed
+
+`cx-demo/platform-health-monitor` is **private** and GHAS has not been purchased
+for the organisation. Confirmed by API response:
+
+```
+PATCH /repos/cx-demo/platform-health-monitor
+  security_and_analysis[advanced_security][status]=enabled
+→ 422 "Advanced security has not been purchased."
+```
+
+Consequence: code scanning, secret scanning, push protection and dependency
+review cannot be enabled, and two of the four required status checks in
+`.github/rulesets/main-protection.json` cannot pass.
+
+Enabled successfully:
+
+- Dependency graph
+- Dependabot security updates
+
+Resolution requires one of the following, by a repository or organisation
+administrator:
+
+1. Assign GHAS (Code Security and Secret Protection) to this repository; or
+2. Make the repository public, where code scanning and dependency review are
+   free.
+
+The failing checks have deliberately **not** been removed, weakened or made
+non-blocking. A required check that cannot pass is a licensing fact to be
+resolved, not a gate to be lowered.
+
 ## Unverified at baseline
 
 The following are **unverified** and are explicitly labelled as such:
 
-- CodeQL analysis — no run recorded against this baseline yet.
-- Dependency review — runs on pull requests only.
+- CodeQL findings — analysis ran but results could not be ingested, so no
+  finding set exists for this baseline.
+- Dependency review — never executed.
+- Secret scanning and push protection — not available.
 - Ruleset enforcement and blocked-merge behaviour — requires repository
   administrator application of `.github/rulesets/main-protection.json`.
-- GHAS secret scanning, push protection and Dependabot alerts — require
-  repository administrator enablement.

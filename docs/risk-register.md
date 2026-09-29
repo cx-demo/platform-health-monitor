@@ -16,6 +16,7 @@ may self-accept a risk.
 | RSK-2 | Internal fault and telemetry-staleness fields are leaked through the public API | Medium | Projection in `readiness_service.get_platform_summary` excludes them; asserted by unit tests | Engineering authority | Mitigated |
 | RSK-3 | Strict-schema consumers break when the payload gains a field | High | ICD-PHM-002 is controlled; contract suite is a required check; `tests/contract/` is CODEOWNER-protected | Interface Control Board | Mitigated |
 | RSK-4 | Telemetry may be absent, stale or non-finite; the current API passes it through without qualification | Medium | Consumers currently interpret raw values; SYS-4412 must never yield a favourable state on incomplete data | Fleet Availability WG | Open |
+| RSK-5 | GitHub Advanced Security is not licensed for this private repository, so code scanning, secret scanning, push protection and dependency review cannot run; two required status checks cannot pass | High | Assign GHAS to the repository, or make the repository public. Checks have not been weakened or removed. | Repository administrator | Open |
 
 ## Risks arising from SYS-4412
 
