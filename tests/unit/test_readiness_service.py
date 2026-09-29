@@ -33,6 +33,8 @@ def _platform(**overrides) -> Platform:
                 subsystem_id="PWR-01",
                 name="Powerpack",
                 temperature_celsius=55.0,
+                mission_critical_fault=False,
+                telemetry_age_seconds=0,
             )
         ],
     )
@@ -140,7 +142,14 @@ HIGH, LOW = ReadinessConfidence.HIGH, ReadinessConfidence.LOW
 
 
 def _sub(subsystem_id="S-01", **overrides) -> Subsystem:
-    fields = dict(subsystem_id=subsystem_id, name="Subsystem", temperature_celsius=50.0)
+    """Fresh, fault-free, explicitly reported telemetry unless overridden."""
+    fields = dict(
+        subsystem_id=subsystem_id,
+        name="Subsystem",
+        temperature_celsius=50.0,
+        mission_critical_fault=False,
+        telemetry_age_seconds=0,
+    )
     fields.update(overrides)
     return Subsystem(**fields)
 
@@ -301,6 +310,105 @@ def test_rule_6_no_subsystems_is_pmc_low():
     assert (result.state, result.confidence) == (PMC, LOW)
 
 
+# Absence is tested through normal model validation (no model_construct).
+
+_REPORTED_SUBSYSTEM = {
+    "subsystem_id": "S-01",
+    "name": "Subsystem",
+    "temperature_celsius": 50.0,
+}
+
+
+@pytest.mark.parametrize(
+    "absent",
+    [
+        ("telemetry_age_seconds",),
+        ("mission_critical_fault",),
+        ("telemetry_age_seconds", "mission_critical_fault"),
+    ],
+    ids=["age-absent", "fault-flag-absent", "both-absent"],
+)
+def test_rule_6_absent_age_or_fault_flag_is_missing_telemetry(absent):
+    record = {
+        **_REPORTED_SUBSYSTEM,
+        "mission_critical_fault": False,
+        "telemetry_age_seconds": 0,
+    }
+    for key in absent:
+        del record[key]
+
+    subsystem = Subsystem.model_validate(record)
+    result = _classify(_sub("A"), subsystem)
+
+    for key in absent:
+        assert getattr(subsystem, key) is None
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+def test_subsystem_absent_age_and_fault_flag_default_to_none_not_fresh_or_false():
+    subsystem = Subsystem(subsystem_id="S-01", name="Subsystem", temperature_celsius=50.0)
+
+    assert subsystem.telemetry_age_seconds is None
+    assert subsystem.mission_critical_fault is None
+    assert _classify(subsystem).state is not FMC
+
+
+@pytest.mark.parametrize(
+    "explicit_none",
+    ["telemetry_age_seconds", "mission_critical_fault"],
+)
+def test_rule_6_explicit_null_age_or_fault_flag_validates_as_missing(explicit_none):
+    record = {
+        **_REPORTED_SUBSYSTEM,
+        "mission_critical_fault": False,
+        "telemetry_age_seconds": 0,
+        explicit_none: None,
+    }
+
+    result = _classify(Subsystem.model_validate(record))
+
+    assert (result.state, result.confidence) == (PMC, LOW)
+
+
+def test_absent_fault_flag_with_high_temperature_is_nmc_low():
+    subsystem = Subsystem.model_validate(
+        {**_REPORTED_SUBSYSTEM, "temperature_celsius": 90.0, "telemetry_age_seconds": 0}
+    )
+
+    result = _classify(subsystem)
+
+    assert (result.state, result.confidence) == (NMC, LOW)
+
+
+def test_absent_age_with_reported_fault_is_nmc_low():
+    subsystem = Subsystem.model_validate(
+        {**_REPORTED_SUBSYSTEM, "mission_critical_fault": True}
+    )
+
+    result = _classify(subsystem)
+
+    assert (result.state, result.confidence) == (NMC, LOW)
+
+
+@pytest.mark.parametrize(
+    "fault_flag",
+    ["yes", 1, 0],
+    ids=["fault-string", "fault-int-1", "fault-int-0"],
+)
+def test_rule_6_malformed_fault_flag_is_bad_telemetry_and_never_fmc(fault_flag):
+    result = _classify(_malformed_sub(mission_critical_fault=fault_flag))
+
+    assert result.confidence is LOW
+    assert result.state is not FMC
+
+
+def test_fleet_fixtures_report_age_and_fault_flag_explicitly():
+    for platform in list_platforms():
+        for subsystem in platform.subsystems:
+            assert "telemetry_age_seconds" in subsystem.model_fields_set
+            assert "mission_critical_fault" in subsystem.model_fields_set
+
+
 @pytest.mark.parametrize(
     "bad",
     [
@@ -310,6 +418,8 @@ def test_rule_6_no_subsystems_is_pmc_low():
         {"temperature_celsius": -math.inf},
         {"telemetry_age_seconds": 300},
         {"telemetry_age_seconds": -5},
+        {"telemetry_age_seconds": None},
+        {"mission_critical_fault": None},
     ],
 )
 def test_bad_telemetry_never_yields_fmc(bad):

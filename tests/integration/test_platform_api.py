@@ -170,7 +170,13 @@ def test_non_finite_temperature_serialises_and_is_classified(monkeypatch, temper
         platform_type="LAND",
         operational=True,
         subsystems=[
-            Subsystem(subsystem_id="PWR-01", name="Powerpack", temperature_celsius=temperature)
+            Subsystem(
+                subsystem_id="PWR-01",
+                name="Powerpack",
+                temperature_celsius=temperature,
+                mission_critical_fault=False,
+                telemetry_age_seconds=0,
+            )
         ],
     )
     monkeypatch.setattr(src.main, "get_platform", lambda _id: platform)
@@ -185,3 +191,39 @@ def test_non_finite_temperature_serialises_and_is_classified(monkeypatch, temper
     record = detail.json()
     assert record["subsystems"][0]["temperatureCelsius"] is None
     assert (record["readinessState"], record["readinessConfidence"]) == ("PMC", "LOW")
+
+
+@pytest.mark.parametrize(
+    "absent",
+    ["telemetry_age_seconds", "mission_critical_fault"],
+)
+def test_absent_age_or_fault_flag_is_published_as_pmc_low(monkeypatch, absent):
+    record = {
+        "subsystem_id": "PWR-01",
+        "name": "Powerpack",
+        "temperature_celsius": 55.0,
+        "mission_critical_fault": False,
+        "telemetry_age_seconds": 0,
+    }
+    del record[absent]
+    platform = Platform.model_validate(
+        {
+            "platform_id": "TST-901",
+            "designation": "Test Platform 901",
+            "platform_type": "LAND",
+            "operational": True,
+            "subsystems": [record],
+        }
+    )
+    monkeypatch.setattr(src.main, "get_platform", lambda _id: platform)
+    monkeypatch.setattr(src.main, "list_platforms", lambda: [platform])
+
+    detail = client.get("/platforms/TST-901")
+    listed = client.get("/platforms")
+
+    assert detail.status_code == 200
+    assert listed.json() == [detail.json()]
+    body = detail.json()
+    assert (body["readinessState"], body["readinessConfidence"]) == ("PMC", "LOW")
+    for marker in LEAK_MARKERS:
+        assert marker not in detail.text

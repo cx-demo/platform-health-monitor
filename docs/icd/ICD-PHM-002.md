@@ -21,7 +21,7 @@ consumer impact assessment before merge.
 | A | Initial platform list endpoint | SYS-4400 | Superseded |
 | B | Added platform detail endpoint and subsystem array | SYS-4400 | Superseded |
 | C | Added `platformType`; baselined subsystem field set | SYS-4400 | Baselined — superseded on rev D approval |
-| D | Added derived `readinessState` and `readinessConfidence` to the platform record (rule `PHM-RDY-1`) | SYS-4412 | **Draft — awaiting ICB approval** |
+| D | Added derived `readinessState` and `readinessConfidence` to the platform record (rule `PHM-RDY-1`); non-finite `temperatureCelsius` published as `null` | SYS-4412 | **Draft — awaiting ICB approval** |
 
 ## Consumers
 
@@ -38,14 +38,25 @@ automatically non-breaking.
 ## Consumer impact statement (rev C → rev D)
 
 Rev D adds two fields to every platform record. It removes and renames nothing.
-Every rev C field keeps its name, type, nullability and meaning.
+Every rev C field keeps its name, type and nullability. One rev C behaviour
+changes, recorded below.
+
+**Non-finite `temperatureCelsius` is now published as `null`.** At rev C a
+non-finite subsystem reading (NaN, +infinity or −infinity) had no defined JSON
+representation and could not be serialised. At rev D it is treated as
+unavailable and published as `null`, the value rev C already permits for an
+unavailable reading. The field's type and nullability are unchanged, but a
+consumer may now receive `null` for a subsystem whose raw reading exists and is
+non-finite. Consumers that treat `null` as "no reading" need no change.
+Consumers must not infer that a `null` temperature means the subsystem is cool;
+`readinessConfidence` is `LOW` whenever this happens.
 
 | Consumer | Impact | Action required before rev D is deployed |
 |---|---|---|
-| Maintenance planning | **Breaking.** Strict validation rejects the two new fields. | Update schema to rev D. Coordinated deployment. |
-| Customer sustainment portal | **Breaking.** Strict validation rejects the two new fields. | Update schema to rev D. Coordinated deployment. |
-| Sortie generation | Non-breaking. Lenient validation ignores unknown fields. | Adopt `readinessState` in place of local derivation (recommended). |
-| Availability reporting | Non-breaking. Figures are contractual. | Confirm `PHM-RDY-1` matches the SYS-4400 contracted availability definition before adopting. **Alignment unverified.** |
+| Maintenance planning | **Breaking.** Strict validation rejects the two new fields. Non-finite readings arrive as `null`. | Update schema to rev D. Confirm `null` temperature handling. Coordinated deployment. |
+| Customer sustainment portal | **Breaking.** Strict validation rejects the two new fields. Non-finite readings arrive as `null`. | Update schema to rev D. Confirm `null` temperature handling. Coordinated deployment. |
+| Sortie generation | Non-breaking. Lenient validation ignores unknown fields. Non-finite readings arrive as `null`. | Adopt `readinessState` in place of local derivation (recommended). |
+| Availability reporting | Non-breaking. Figures are contractual. Non-finite readings arrive as `null`. | Confirm `PHM-RDY-1` matches the SYS-4400 contracted availability definition before adopting. **Alignment unverified.** |
 
 Rollout is coordinated, not opt-in. Rev D must not be deployed until both
 strict consumers accept rev D payloads. Rollback is a redeploy of the rev C
@@ -79,13 +90,15 @@ other fields are permitted at rev D.
 
 ## Subsystem record
 
-Unchanged from rev C.
+Field set, types and nullability unchanged from rev C. Rev D changes the
+publication of non-finite `temperatureCelsius` readings: they are now published
+as `null` (see the consumer impact statement).
 
 | Field | Type | Nullable | Description |
 |---|---|---|---|
 | `subsystemId` | string | No | Platform-unique subsystem identifier |
 | `name` | string | No | Subsystem name |
-| `temperatureCelsius` | number | **Yes** | Most recent reading; `null` when unavailable. A non-finite reading (NaN, ±infinity) is unavailable and is published as `null`. |
+| `temperatureCelsius` | number | **Yes** | Most recent reading; `null` when unavailable. **Rev D:** a non-finite reading (NaN, ±infinity) is unavailable and is published as `null`. |
 | `operational` | boolean | No | Subsystem-level operational flag |
 
 ## Readiness derivation — rule `PHM-RDY-1`
@@ -115,10 +128,12 @@ Definitions:
 - **Valid temperature** — a finite number. Rules 2 and 4 use valid readings
   even when they are stale, so an old high reading is never discarded in the
   platform's favour.
-- **Missing** — no temperature reading (`null`).
+- **Missing** — no temperature reading (`null`), or no reported telemetry age
+  or mission-critical fault flag for the subsystem. An absent age is never
+  treated as fresh, and an absent fault flag is never treated as "no fault".
 - **Non-finite** — NaN, +infinity or −infinity.
-- **Malformed** — a temperature or telemetry age that is not a number, or a
-  negative telemetry age.
+- **Malformed** — a temperature or telemetry age that is not a number, a
+  negative telemetry age, or a fault flag that is not a boolean.
 - **Stale** — telemetry age of **300 seconds or more**. A reading exactly
   300 seconds old is stale.
 

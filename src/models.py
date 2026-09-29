@@ -9,8 +9,10 @@ class Subsystem(BaseModel):
     name: str
     temperature_celsius: float | None = None
     operational: bool = True
-    mission_critical_fault: bool = False
-    telemetry_age_seconds: int = 0
+    # SYS-4412: None means the value was not reported. Absence is missing
+    # telemetry under PHM-RDY-1 rule 6, never "no fault" or "fresh".
+    mission_critical_fault: bool | None = None
+    telemetry_age_seconds: int | None = None
 
 
 class Platform(BaseModel):

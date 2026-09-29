@@ -31,6 +31,8 @@ def _has_bad_telemetry(subsystem: Subsystem) -> bool:
     """Missing, non-finite, malformed or stale telemetry (PHM-RDY-1 rule 6)."""
     if _valid_temperature(subsystem) is None:
         return True
+    if not isinstance(subsystem.mission_critical_fault, bool):
+        return True
     age = subsystem.telemetry_age_seconds
     if not _is_number(age) or not math.isfinite(age) or age < 0:
         return True

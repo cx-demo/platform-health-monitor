@@ -25,6 +25,8 @@ Route handlers must not contain business rules.
 and `telemetry_age_seconds` are internal diagnostics and are deliberately **not**
 projected by `get_platform_summary`. Leaking fault codes or diagnostic detail
 through the public API is a security and interface concern, not a convenience.
+Both are optional: an absent value means "not reported" and is classified as
+missing telemetry by rule `PHM-RDY-1` (SYS-4412), never as fresh or fault-free.
 
 The projection function is the single point at which internal state becomes
 external contract. Any change there is an ICD-PHM-002 interface change.
