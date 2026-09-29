@@ -184,14 +184,13 @@ Checklist:
 - [ ] Code scanning enabled and CodeQL has completed at least one successful
       run (required checks need history)
 - [ ] Secret scanning and push protection enabled
-- [ ] **`@cxdemosg` added as a repository collaborator with write access** —
-      this account does not currently exist as a GitHub user and is not a
-      collaborator. GitHub **silently ignores** unresolvable `CODEOWNERS`
-      entries, so `/src/`, `/.github/workflows/` and `/.github/rulesets/` are
-      unprotected until this is fixed. Verify with
-      `gh api /repos/$REPO/codeowners/errors`.
+- [ ] `@cx-demo` confirmed as a collaborator with admin access (engineering
+      authority — owns `src/`, `.github/workflows/`, `.github/rulesets/`)
 - [ ] `@pedric1` confirmed as a collaborator with write access (interface
       control board — owns `docs/icd/` and `tests/contract/`)
+- [ ] `CODEOWNERS` resolves cleanly — verify with
+      `gh api /repos/$REPO/codeowners/errors`; GitHub silently ignores entries
+      it cannot resolve, leaving those paths unprotected
 - [ ] Note: `require_last_push_approval` bars the last pusher from approving,
       so the implementing engineer cannot self-approve an interface change
 - [ ] All four workflows present and green on `main`

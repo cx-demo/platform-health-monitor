@@ -4,14 +4,9 @@
 # The separation matters: the engineer implementing a change cannot approve
 # their own interface change. An ICD revision or a contract-test edit requires
 # the interface control board.
-#
-# NOTE: @cxdemosg is not yet a repository collaborator. GitHub silently ignores
-# CODEOWNERS entries it cannot resolve, so the paths owned by @cxdemosg are
-# currently UNPROTECTED. Add the account as a collaborator with write access
-# before relying on this file as a control.
 
-/src/                    @cxdemosg
+/src/                    @cx-demo
 /docs/icd/               @pedric1
 /tests/contract/         @pedric1
-/.github/workflows/      @cxdemosg
-/.github/rulesets/       @cxdemosg
+/.github/workflows/      @cx-demo
+/.github/rulesets/       @cx-demo
