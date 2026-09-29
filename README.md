@@ -130,44 +130,46 @@ Sessions run in isolated worktrees and cannot read each other's chat. Therefore:
 These steps require org/admin scope and are **not** applied by this repository's
 contents alone.
 
-> ### ⚠️ GHAS licence is a hard prerequisite
+> ### Current state
 >
-> This repository is **private** and GitHub Advanced Security has not been
-> purchased for the organisation. Verified:
+> The repository is **public**, so code scanning and dependency review are
+> available at no cost. Already configured and verified green:
 >
+> | Feature | State |
+> |---|---|
+> | Code scanning (CodeQL, advanced setup) | Enabled |
+> | CodeQL default setup | **Disabled — required** |
+> | Secret scanning + push protection | Enabled |
+> | Dependency graph + Dependabot security updates | Enabled |
+>
+> **CodeQL default setup must stay off.** With it enabled, the SARIF from
+> `.github/workflows/codeql.yml` is rejected with *"CodeQL analyses from
+> advanced configurations cannot be processed when the default setup is
+> enabled"*. Keeping the workflow authoritative means the query suite is
+> versioned and reviewable rather than a UI toggle:
+>
+> ```bash
+> gh api -X PATCH /repos/$REPO/code-scanning/default-setup -f state=not-configured
 > ```
-> PATCH /repos/<org>/platform-health-monitor
->   security_and_analysis[advanced_security][status]=enabled
-> → 422 "Advanced security has not been purchased."
-> ```
 >
-> Without GHAS, **`CodeQL analysis` and `Dependency Review` cannot pass** —
-> CodeQL runs but its SARIF upload is rejected because code scanning is off,
-> and dependency review is unsupported on a private repository. Two of the four
-> required status checks are therefore permanently red.
->
-> Fix it one of two ways before the demo:
->
-> 1. Assign GHAS (Code Security + Secret Protection) to the repository, or
-> 2. Make the repository **public**, where both are free.
->
-> Do **not** resolve this by deleting the workflows or dropping them from the
-> ruleset. Lowering a gate you cannot currently satisfy is the exact behaviour
-> this repository exists to argue against.
->
-> Already enabled and working: dependency graph, Dependabot security updates.
+> If the repository is ever made private again, code scanning and dependency
+> review require a purchased GHAS licence. Do **not** resolve that by deleting
+> the workflows or dropping them from the ruleset — lowering a gate you cannot
+> satisfy is the exact behaviour this repository exists to argue against.
 
 ```bash
 REPO=<org>/platform-health-monitor
 
-# 1. Enable GHAS (requires a purchased licence, or a public repository)
+# 1. Security features (public repository; GHAS licence needed if private)
 gh api -X PATCH /repos/$REPO \
-  -f 'security_and_analysis[advanced_security][status]=enabled' \
   -f 'security_and_analysis[secret_scanning][status]=enabled' \
   -f 'security_and_analysis[secret_scanning_push_protection][status]=enabled' \
   -f 'security_and_analysis[dependabot_security_updates][status]=enabled'
 
-# 2. Apply branch protection
+gh api -X PATCH /repos/$REPO/code-scanning/default-setup -f state=not-configured
+
+# 2. Apply branch protection — do this AFTER the baseline PR has merged,
+#    otherwise the ruleset blocks the very pull request that introduces it
 gh api -X POST /repos/$REPO/rulesets \
   --input .github/rulesets/main-protection.json
 
@@ -180,22 +182,22 @@ gh issue create --repo $REPO \
 
 Checklist:
 
-- [ ] **GHAS licensed, or repository made public** — blocks two required checks
-- [ ] Code scanning enabled and CodeQL has completed at least one successful
-      run (required checks need history)
-- [ ] Secret scanning and push protection enabled
-- [ ] `@cx-demo` confirmed as a collaborator with admin access (engineering
+- [x] Repository public; code scanning, secret scanning, push protection,
+      dependency graph and Dependabot enabled
+- [x] CodeQL default setup disabled so the committed workflow is authoritative
+- [x] CodeQL has completed a successful run (required checks need history)
+- [x] `@cx-demo` confirmed as a collaborator with admin access (engineering
       authority — owns `src/`, `.github/workflows/`, `.github/rulesets/`)
-- [ ] `@pedric1` confirmed as a collaborator with write access (interface
+- [x] `@pedric1` confirmed as a collaborator with write access (interface
       control board — owns `docs/icd/` and `tests/contract/`)
-- [ ] `CODEOWNERS` resolves cleanly — verify with
-      `gh api /repos/$REPO/codeowners/errors`; GitHub silently ignores entries
-      it cannot resolve, leaving those paths unprotected
-- [ ] Note: `require_last_push_approval` bars the last pusher from approving,
-      so the implementing engineer cannot self-approve an interface change
-- [ ] All four workflows present and green on `main`
-- [ ] Ruleset applied and active
-- [ ] `require_last_push_approval` confirmed on
+- [x] `CODEOWNERS` resolves cleanly — `gh api /repos/$REPO/codeowners/errors`
+      returns no errors. GitHub silently ignores entries it cannot resolve,
+      leaving those paths unprotected, so verify this rather than assume it
+- [x] All four required checks green on the baseline pull request
+- [ ] Baseline pull request merged to `main`
+- [ ] Ruleset applied and active (**after** the merge)
+- [ ] `require_last_push_approval` confirmed on — the implementing engineer
+      cannot self-approve an interface change
 - [ ] **Verified an administrator merge is actually blocked** — test it, do not
       assume
 - [ ] SYS-4412 issue created with gate checkboxes unticked

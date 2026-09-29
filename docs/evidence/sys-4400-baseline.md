@@ -50,53 +50,60 @@ Asserted by `tests/contract/test_icd_phm_002_compatibility.py`.
 
 ## Continuous integration result
 
-Observed on the baseline pull request:
+Observed on the baseline pull request, after the repository was made public
+and code scanning was reconfigured:
 
 | Required check | Result | Note |
 |---|---|---|
 | `Unit, integration and contract tests` | ✅ Pass | 20 tests, coverage gate met |
 | `Requirement Traceability` | ✅ Pass | Requirement ID, matrix update and evidence all present |
-| `CodeQL analysis` | ❌ Fail | Analysis completed; **SARIF upload rejected — code scanning not enabled on the repository** |
-| `Dependency Review` | ❌ Fail | **Not supported — dependency review requires GHAS on a private repository** |
+| `CodeQL analysis` | ✅ Pass | `security-extended,security-and-quality`, SARIF ingested |
+| `Dependency Review` | ✅ Pass | `fail-on-severity: moderate` |
 
-## Blocked: GitHub Advanced Security not licensed
+## Security configuration
 
-`cx-demo/platform-health-monitor` is **private** and GHAS has not been purchased
-for the organisation. Confirmed by API response:
+| Feature | State |
+|---|---|
+| Repository visibility | Public |
+| Code scanning (CodeQL, advanced setup) | Enabled |
+| CodeQL default setup | Disabled — required, see below |
+| Secret scanning | Enabled |
+| Secret scanning push protection | Enabled |
+| Dependency graph | Enabled |
+| Dependabot security updates | Enabled |
+
+### CodeQL default setup had to be disabled
+
+With default setup enabled, the SARIF produced by
+`.github/workflows/codeql.yml` was rejected:
 
 ```
-PATCH /repos/cx-demo/platform-health-monitor
-  security_and_analysis[advanced_security][status]=enabled
-→ 422 "Advanced security has not been purchased."
+Code Scanning could not process the submitted SARIF file:
+CodeQL analyses from advanced configurations cannot be processed when the
+default setup is enabled
 ```
 
-Consequence: code scanning, secret scanning, push protection and dependency
-review cannot be enabled, and two of the four required status checks in
-`.github/rulesets/main-protection.json` cannot pass.
+Default setup was set to `not-configured` so the **versioned, reviewable**
+workflow in the repository is the authoritative scanning configuration. That
+matters here: the query suite (`security-extended`) is part of the change
+record, not a setting somebody toggled in the UI.
 
-Enabled successfully:
+## Code ownership
 
-- Dependency graph
-- Dependabot security updates
+`CODEOWNERS` resolves with no errors
+(`GET /repos/{owner}/{repo}/codeowners/errors` → `{"errors": []}`).
 
-Resolution requires one of the following, by a repository or organisation
-administrator:
+| Path | Owner | Role |
+|---|---|---|
+| `/src/`, `/.github/workflows/`, `/.github/rulesets/` | `@cx-demo` | Engineering authority |
+| `/docs/icd/`, `/tests/contract/` | `@pedric1` | Interface control board |
 
-1. Assign GHAS (Code Security and Secret Protection) to this repository; or
-2. Make the repository public, where code scanning and dependency review are
-   free.
-
-The failing checks have deliberately **not** been removed, weakened or made
-non-blocking. A required check that cannot pass is a licensing fact to be
-resolved, not a gate to be lowered.
+The implementing engineer cannot approve their own interface change.
 
 ## Unverified at baseline
 
 The following are **unverified** and are explicitly labelled as such:
 
-- CodeQL findings — analysis ran but results could not be ingested, so no
-  finding set exists for this baseline.
-- Dependency review — never executed.
-- Secret scanning and push protection — not available.
-- Ruleset enforcement and blocked-merge behaviour — requires repository
-  administrator application of `.github/rulesets/main-protection.json`.
+- Ruleset enforcement and blocked-merge behaviour — `.github/rulesets/main-protection.json`
+  has not yet been applied to the repository. Apply it after this baseline
+  merges, then confirm an administrator merge is actually refused.
