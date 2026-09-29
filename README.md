@@ -18,7 +18,9 @@ At ICD-PHM-002 rev C the API exposed **raw subsystem telemetry only**. Every
 downstream consumer re-implemented its own interpretation of "is this platform
 usable", and they disagreed. `SYS-4412` adds a single authoritative
 `readinessState` derivation (`FMC` / `PMC` / `NMC`) plus `readinessConfidence`
-(`HIGH` / `LOW`), under rule `PHM-RDY-1` and draft ICD rev D. See
+(`HIGH` / `LOW`), under rule `SYS-4412-R1` and draft ICD rev D. Rev D is served
+on a parallel `/v2` surface (PHMS 2.4.0); `/platforms` stays at rev C with no
+readiness fields, and consumers opt in by base path. See
 `demo/sys-4412-issue.md` for the engineering change request.
 
 ## Fleet fixture
@@ -29,9 +31,9 @@ usable", and they disagreed. `SYS-4412` adds a single authoritative
 | `AIR-207` | `AIR` | Gearbox running warm (78 °C) |
 | `MSN-330` | `MISSION_SYSTEM` | Mission-critical fault, 94 °C generator, stale comms telemetry |
 
-At rev C none of that condition was visible through the API. At rev D the
-derived readiness is published (`FMC`, `PMC`, `NMC` respectively); the fault
-and telemetry age stay internal.
+None of that condition is visible through the rev C `/platforms` API. The
+rev D `/v2/platforms` API publishes the derived readiness (`FMC`, `PMC`, `NMC`
+respectively); the fault and telemetry age stay internal.
 
 ## Run it
 
@@ -42,21 +44,23 @@ pip install -e ".[dev]"
 uvicorn src.main:app --reload
 ```
 
-- `GET http://127.0.0.1:8000/platforms`
-- `GET http://127.0.0.1:8000/platforms/LND-114`
-- `http://127.0.0.1:8000/docs` — Swagger UI, interactive
-- `http://127.0.0.1:8000/redoc` — ReDoc, reads better as an interface spec
-- `GET http://127.0.0.1:8000/openapi.json` — machine-readable form of the ICD
+- `GET http://127.0.0.1:8000/platforms` — rev C, no readiness
+- `GET http://127.0.0.1:8000/platforms/LND-114` — rev C
+- `GET http://127.0.0.1:8000/v2/platforms` — rev D, with `readinessState` and `readinessConfidence`
+- `GET http://127.0.0.1:8000/v2/platforms/LND-114` — rev D
+- `http://127.0.0.1:8000/docs` · `/v2/docs` — Swagger UI, interactive
+- `http://127.0.0.1:8000/redoc` · `/v2/redoc` — ReDoc, reads better as an interface spec
+- `GET http://127.0.0.1:8000/openapi.json` (2.3.0, rev C) · `/v2/openapi.json` (2.4.0, rev D) — machine-readable forms of the ICD
 
 ### Fleet plate
 
 - `GET http://127.0.0.1:8000/dashboard` — a read-only visualisation of the fleet
 
-The plate is a browser-side consumer of `GET /platforms`, not an extension of
+The plate is a browser-side consumer of `GET /v2/platforms`, not an extension of
 the interface. It holds no privileged access and reads the same payload any
 integrator receives, so whatever it cannot show you, no consumer can show you.
-It is deliberately excluded from `/openapi.json`: that document is the
-machine-readable form of ICD-PHM-002, and adding a path to it would be an
+It is deliberately excluded from `/openapi.json` and `/v2/openapi.json`: those are the
+machine-readable forms of ICD-PHM-002, and adding a path to either would be an
 interface change.
 
 ## Test it
@@ -74,9 +78,13 @@ All four run in CI under the check context
 ## Interface control
 
 `docs/icd/ICD-PHM-002.md` is a **controlled interface document**. Rev C is
-baselined; rev D (SYS-4412) is drafted and awaits Interface Control Board approval. `tests/contract/test_icd_phm_002_compatibility.py` asserts the rev D
-field set exactly, on both endpoints, and checks it against the ICD Platform
-record table so the two cannot drift.
+baselined for `/platforms`; rev D (SYS-4412, `/v2`) is drafted and awaits
+Interface Control Board approval.
+`tests/contract/test_icd_phm_002_compatibility.py` asserts the rev C field set
+exactly on both `/platforms` endpoints and is unchanged.
+`tests/contract/test_icd_phm_002_rev_d.py` asserts the rev D field set exactly
+on both `/v2` endpoints and checks it against the ICD rev D platform record
+table so the two cannot drift.
 
 Two downstream consumers validate the response schema strictly, so an additive
 field is **not** automatically non-breaking. A payload change therefore needs an

@@ -40,9 +40,11 @@ can build against and that no single team may change unilaterally.
 
 ## Operating Context
 
-- FastAPI service; `GET /platforms` and `GET /platforms/{platform_id}` return summaries shaped by
-  `src/readiness_service.get_platform_summary`. OpenAPI is generated at `/openapi.json`, with
-  Swagger UI at `/docs` and ReDoc at `/redoc`.
+- FastAPI service with two surfaces. `GET /platforms` and `GET /platforms/{platform_id}` serve
+  ICD-PHM-002 revision C, shaped by `src/readiness_service.get_platform_summary`, with no
+  readiness fields; OpenAPI 2.3.0 is at `/openapi.json`, Swagger UI at `/docs`, ReDoc at `/redoc`.
+  `GET /v2/platforms` and `GET /v2/platforms/{platform_id}` serve revision D, shaped by
+  `src/readiness_service.summarise_v2`; OpenAPI 2.4.0 is at `/v2/openapi.json`.
 - The published summary is a deliberate **projection** of the internal model. `Subsystem` carries
   `mission_critical_fault` and `telemetry_age_seconds`; `get_platform_summary` omits both.
 - Change is governed. Work is traced by `SYS-NNNN` requirement IDs. Every pull request must carry
@@ -50,15 +52,17 @@ can build against and that no single team may change unilaterally.
   issue or pull request for human review.
   `main` is protected by an active ruleset; code ownership is split so that `/docs/icd/` and
   `/tests/contract/` sit with the interface-control board.
-- `tests/contract/test_icd_phm_002_compatibility.py` asserts the ICD-PHM-002 revision D field set
-  exactly on both endpoints and checks it against the ICD Platform record table. It is a
-  governance instrument. Weakening, skipping or deleting it to make a build pass is the defined
+- `tests/contract/test_icd_phm_002_compatibility.py` asserts the ICD-PHM-002 revision C field set
+  exactly on both `/platforms` endpoints and is unchanged by revision D.
+  `tests/contract/test_icd_phm_002_rev_d.py` asserts the revision D field set exactly on both `/v2`
+  endpoints and checks it against the ICD rev D platform record table. Both are governance
+  instruments. Weakening, skipping or deleting it to make a build pass is the defined
   wrong answer; when an ICD revision changes the payload, it is updated to that revision in the
   same pull request, at least as strictly, with code-owner approval of both.
-- SYS-4412 adds derived `readinessState` (`FMC` / `PMC` / `NMC`) and `readinessConfidence`
-  (`HIGH` / `LOW`) to every platform record under rule `PHM-RDY-1`. It advances ICD-PHM-002 to
-  revision D, which is drafted and awaits Interface Control Board approval of both the ICD and
-  the contract tests.
+- SYS-4412 publishes derived `readinessState` (`FMC` / `PMC` / `NMC`) and `readinessConfidence`
+  (`HIGH` / `LOW`) under rule `SYS-4412-R1` on the `/v2` surface only. Consumers opt in by base
+  path. ICD-PHM-002 revision D is drafted and awaits Interface Control Board approval of both
+  the ICD and the contract tests.
 
 ## Capabilities and Constraints
 
@@ -71,7 +75,7 @@ can build against and that no single team may change unilaterally.
 **Constraints that bind any new work**
 
 - **The published contract grows only by ICD revision.** Any surface built on PHMS reads only
-  the ICD-PHM-002 revision D field set: `platformId`, `designation`, `platformType`,
+  a published revision's field set. The revision D (`/v2`) set is: `platformId`, `designation`, `platformType`,
   `operational`, `readinessState`, `readinessConfidence`, and per subsystem `subsystemId`,
   `name`, `temperatureCelsius`, `operational`. Rendering any other field, or any field before
   its ICD revision exists, is forbidden.
@@ -83,8 +87,9 @@ can build against and that no single team may change unilaterally.
 
 `MSN-330` has a mission-critical fault on its prime power generator and comms telemetry one hour
 stale. Neither field is published, and the platform's own `operational` flag reads `true`. At
-revision C any consumer honouring the contract would report `MSN-330` as serviceable. Revision D
-publishes `readinessState: NMC` and `readinessConfidence: LOW` for it. The fault and the
+revision C (`/platforms`) any consumer honouring the contract will report `MSN-330` as
+serviceable. Revision D (`/v2/platforms`) publishes `readinessState: NMC` and
+`readinessConfidence: LOW` for it. The fault and the
 telemetry age remain unpublished, and that remaining gap stays visible.
 
 ## Brand Commitments

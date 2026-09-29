@@ -1,5 +1,5 @@
 """Unit tests for the platform summary projection (SYS-4400) and the
-PHM-RDY-1 readiness classifier (SYS-4412)."""
+SYS-4412-R1 readiness classifier (SYS-4412)."""
 
 import math
 
@@ -16,6 +16,7 @@ from src.readiness_service import (
     STALE_TELEMETRY_AGE_SECONDS,
     classify_readiness,
     get_platform_summary,
+    summarise_v2,
 )
 from src.repository import PLATFORMS, get_platform, list_platforms
 
@@ -136,7 +137,7 @@ def test_list_platforms_covers_all_three_domains():
     assert len(list_platforms()) == len(PLATFORMS)
 
 
-# ── SYS-4412 · PHM-RDY-1 readiness classifier ─────────────────────────────
+# ── SYS-4412 · SYS-4412-R1 readiness classifier ─────────────────────────────
 
 FMC, PMC, NMC = ReadinessState.FMC, ReadinessState.PMC, ReadinessState.NMC
 HIGH, LOW = ReadinessConfidence.HIGH, ReadinessConfidence.LOW
@@ -176,8 +177,8 @@ def _classify(*subsystems, operational=True):
     )
 
 
-def test_rule_version_is_phm_rdy_1():
-    assert READINESS_RULE_VERSION == "PHM-RDY-1"
+def test_rule_version_is_sys_4412_r1():
+    assert READINESS_RULE_VERSION == "SYS-4412-R1"
 
 
 def test_permitted_readiness_values_are_exactly_fmc_pmc_nmc():
@@ -209,10 +210,40 @@ def test_rule_3_platform_not_operational_is_nmc():
     assert (result.state, result.confidence) == (NMC, HIGH)
 
 
-def test_rule_3_subsystem_not_operational_without_fault_is_nmc():
+def test_rule_5_subsystem_not_operational_without_fault_is_degraded_pmc():
     result = _classify(_sub("A"), _sub("B", operational=False))
 
+    assert (result.state, result.confidence) == (PMC, HIGH)
+
+
+def test_rule_5_every_subsystem_not_operational_is_still_pmc():
+    result = _classify(_sub("A", operational=False), _sub("B", operational=False))
+
+    assert (result.state, result.confidence) == (PMC, HIGH)
+
+
+def test_rule_3_platform_not_operational_overrides_rule_5():
+    result = _classify(_sub("A", operational=False), operational=False)
+
     assert (result.state, result.confidence) == (NMC, HIGH)
+
+
+def test_rule_1_fault_overrides_rule_5():
+    result = _classify(_sub("A", operational=False, mission_critical_fault=True))
+
+    assert (result.state, result.confidence) == (NMC, HIGH)
+
+
+def test_rule_2_temperature_overrides_rule_5():
+    result = _classify(_sub("A", operational=False, temperature_celsius=90.0))
+
+    assert (result.state, result.confidence) == (NMC, HIGH)
+
+
+def test_rule_5_degraded_subsystem_with_stale_telemetry_is_pmc_low():
+    result = _classify(_sub("A", operational=False, telemetry_age_seconds=301))
+
+    assert (result.state, result.confidence) == (PMC, LOW)
 
 
 def test_rule_3_takes_precedence_over_rule_4():
@@ -249,8 +280,8 @@ def test_rule_4_one_warm_subsystem_is_pmc():
     assert (result.state, result.confidence) == (PMC, HIGH)
 
 
-def test_rule_5_is_reserved_and_never_matches_on_nominal_data():
-    assert _classify(_sub()).state is FMC
+def test_rule_5_does_not_match_when_every_subsystem_is_operational():
+    assert _classify(_sub("A"), _sub("B")).state is FMC
 
 
 @pytest.mark.parametrize(
@@ -298,12 +329,13 @@ def test_rule_2_plus_inf_takes_precedence_over_rule_3_and_4():
     [
         (0, (FMC, HIGH)),
         (STALE_TELEMETRY_AGE_SECONDS - 1, (FMC, HIGH)),
-        (STALE_TELEMETRY_AGE_SECONDS, (PMC, LOW)),
+        (STALE_TELEMETRY_AGE_SECONDS, (FMC, HIGH)),
         (STALE_TELEMETRY_AGE_SECONDS + 1, (PMC, LOW)),
         (3600, (PMC, LOW)),
     ],
+    ids=["0s", "299s", "300s-fresh", "301s-stale", "3600s"],
 )
-def test_rule_6_staleness_boundary_at_300_seconds(age, expected):
+def test_rule_6_staleness_boundary_above_300_seconds(age, expected):
     result = _classify(_sub(telemetry_age_seconds=age))
 
     assert STALE_TELEMETRY_AGE_SECONDS == 300
@@ -414,7 +446,7 @@ def test_malformed_temperature_or_age_via_platform_validation_is_pmc_low(
     )
 
     result = classify_readiness(platform)
-    summary = get_platform_summary(platform)
+    summary = summarise_v2(platform)
 
     assert getattr(platform.subsystems[0], field) is None
     assert (result.state, result.confidence) == (PMC, LOW)
@@ -468,12 +500,24 @@ def test_real_number_temperature_and_age_are_valid(temperature, age):
     assert (result.state, result.confidence) == (FMC, HIGH)
 
 
-def test_whole_float_stale_age_is_still_stale():
+def test_whole_float_age_at_threshold_is_fresh():
     subsystem = Subsystem.model_validate(
         {**_VALID_SUBSYSTEM, "telemetry_age_seconds": 300.0}
     )
 
     assert subsystem.telemetry_age_seconds == STALE_TELEMETRY_AGE_SECONDS
+    assert (_classify(subsystem).state, _classify(subsystem).confidence) == (
+        FMC,
+        HIGH,
+    )
+
+
+def test_whole_float_age_above_threshold_is_stale():
+    subsystem = Subsystem.model_validate(
+        {**_VALID_SUBSYSTEM, "telemetry_age_seconds": 301.0}
+    )
+
+    assert subsystem.telemetry_age_seconds == STALE_TELEMETRY_AGE_SECONDS + 1
     assert (_classify(subsystem).state, _classify(subsystem).confidence) == (
         PMC,
         LOW,
@@ -499,7 +543,7 @@ def test_oversized_int_age_via_model_validate_is_malformed_pmc_low(value):
     )
 
     result = classify_readiness(platform)
-    summary = get_platform_summary(platform)
+    summary = summarise_v2(platform)
 
     assert platform.subsystems[0].telemetry_age_seconds is None
     assert (result.state, result.confidence) == (PMC, LOW)
@@ -746,7 +790,7 @@ def test_unknown_subsystem_operational_flag_is_published_as_false(operational):
         {**_REPORTED_SUBSYSTEM, "operational": operational, "mission_critical_fault": False, "telemetry_age_seconds": 0}
     )
 
-    summary = get_platform_summary(_platform(subsystems=[subsystem]))
+    summary = summarise_v2(_platform(subsystems=[subsystem]))
 
     assert summary["subsystems"][0]["operational"] is False
     assert (summary["readinessState"], summary["readinessConfidence"]) == ("PMC", "LOW")
@@ -759,8 +803,10 @@ def test_unknown_subsystem_operational_flag_is_published_as_false(operational):
         {"temperature_celsius": math.nan},
         {"temperature_celsius": math.inf},
         {"temperature_celsius": -math.inf},
-        {"telemetry_age_seconds": 300},
+        {"telemetry_age_seconds": 301},
         {"telemetry_age_seconds": -5},
+        {"temperature_celsius": -273.16},
+        {"temperature_celsius": -1000.0},
         {"telemetry_age_seconds": None},
         {"mission_critical_fault": None},
         {"operational": None},
@@ -823,22 +869,41 @@ def test_classification_is_deterministic():
     ],
 )
 def test_fleet_classification(platform_id, state, confidence):
-    summary = get_platform_summary(get_platform(platform_id))
+    summary = summarise_v2(get_platform(platform_id))
 
     assert summary["readinessState"] == state
     assert summary["readinessConfidence"] == confidence
 
 
 def test_summary_publishes_readiness_fields_as_plain_strings():
-    summary = get_platform_summary(_platform())
+    summary = summarise_v2(_platform())
 
     assert type(summary["readinessState"]) is str
     assert type(summary["readinessConfidence"]) is str
     assert (summary["readinessState"], summary["readinessConfidence"]) == ("FMC", "HIGH")
 
 
-def test_summary_platform_fields_are_rev_c_plus_rev_d_readiness():
+def test_rev_c_summary_publishes_exactly_the_rev_c_fields():
     assert set(get_platform_summary(_platform())) == {
+        "platformId",
+        "designation",
+        "platformType",
+        "operational",
+        "subsystems",
+    }
+
+
+def test_v2_summary_is_rev_c_summary_plus_readiness():
+    platform = _platform(subsystems=[_sub("A", temperature_celsius=75.0)])
+    rev_c = get_platform_summary(platform)
+    rev_d = summarise_v2(platform)
+
+    assert {key: rev_d[key] for key in rev_c} == rev_c
+    assert (rev_d["readinessState"], rev_d["readinessConfidence"]) == ("PMC", "HIGH")
+
+
+def test_v2_summary_platform_fields_are_rev_c_plus_rev_d_readiness():
+    assert set(summarise_v2(_platform())) == {
         "platformId",
         "designation",
         "platformType",
@@ -857,7 +922,7 @@ def test_summary_platform_fields_are_rev_c_plus_rev_d_readiness():
 def test_summary_publishes_non_finite_temperature_as_null(temperature, state):
     platform = _platform(subsystems=[_sub(temperature_celsius=temperature)])
 
-    summary = get_platform_summary(platform)
+    summary = summarise_v2(platform)
 
     assert summary["subsystems"][0]["temperatureCelsius"] is None
     assert summary["readinessState"] == state
@@ -865,7 +930,7 @@ def test_summary_publishes_non_finite_temperature_as_null(temperature, state):
 
 
 def test_summary_never_exposes_classification_internals():
-    summary = get_platform_summary(
+    summary = summarise_v2(
         _platform(subsystems=[_sub(mission_critical_fault=True, telemetry_age_seconds=3600)])
     )
     flattened = repr(summary)
@@ -875,8 +940,50 @@ def test_summary_never_exposes_classification_internals():
         "telemetryAgeSeconds",
         "mission_critical_fault",
         "telemetry_age_seconds",
-        "PHM-RDY-1",
+        "SYS-4412-R1",
         "rule",
         "reason",
     ):
         assert leaked not in flattened
+
+
+# SYS-4412-R1: temperatures below absolute zero (-273.15 °C) are malformed.
+
+
+@pytest.mark.parametrize(
+    ("temperature", "expected"),
+    [
+        (-273.15, (FMC, HIGH)),
+        (-273.16, (PMC, LOW)),
+        (-1000.0, (PMC, LOW)),
+    ],
+    ids=["absolute-zero-valid", "just-below-absolute-zero", "far-below"],
+)
+def test_absolute_zero_boundary(temperature, expected):
+    result = _classify(_sub("A"), _sub("B", temperature_celsius=temperature))
+
+    assert (result.state, result.confidence) == expected
+
+
+def test_below_absolute_zero_is_never_fmc_and_published_as_null():
+    platform = _platform(subsystems=[_sub(temperature_celsius=-273.16)])
+
+    summary = summarise_v2(platform)
+
+    assert summary["subsystems"][0]["temperatureCelsius"] is None
+    assert (summary["readinessState"], summary["readinessConfidence"]) == ("PMC", "LOW")
+    assert get_platform_summary(platform)["subsystems"][0]["temperatureCelsius"] is None
+
+
+def test_below_absolute_zero_with_real_fault_elsewhere_is_nmc_low():
+    result = _classify(
+        _sub("A", mission_critical_fault=True), _sub("B", temperature_celsius=-300.0)
+    )
+
+    assert (result.state, result.confidence) == (NMC, LOW)
+
+
+def test_below_absolute_zero_integer_reading_is_malformed():
+    subsystem = Subsystem.model_validate({**_VALID_SUBSYSTEM, "temperature_celsius": -274})
+
+    assert (_classify(subsystem).state, _classify(subsystem).confidence) == (PMC, LOW)

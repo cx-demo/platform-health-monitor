@@ -88,7 +88,7 @@ The shipped `GET /dashboard` surface is a read-only fleet plate, not an operatio
 
 Mode is **Operate**. Engineers scan published facts, compare three platforms on one shared scale, see the measured extremity, and also see the contract gap drawn as hatched reserved space. Interface absence is not hidden and not dramatised; it is dimensioned as an engineering fact.
 
-Binding constraints are law for this surface: it is read-only; it may render only fields published by ICD-PHM-002 revision D (`platformId`, `designation`, `platformType`, `operational`, `readinessState`, `readinessConfidence`, and subsystem `subsystemId`, `name`, `temperatureCelsius`, `operational`); `readinessState` and `readinessConfidence` are rendered as neutral text only; no third-party origins or webfonts; presentation routes such as `/` and `/dashboard` stay out of `/openapi.json`.
+Binding constraints are law for this surface: it is read-only; it may render only fields published by ICD-PHM-002 revision D (`platformId`, `designation`, `platformType`, `operational`, `readinessState`, `readinessConfidence`, and subsystem `subsystemId`, `name`, `temperatureCelsius`, `operational`); `readinessState` and `readinessConfidence` are rendered as neutral text only; no third-party origins or webfonts; presentation routes such as `/` and `/dashboard` stay out of `/openapi.json` and `/v2/openapi.json`. Readiness is read from `/v2`; `/platforms` (revision C) carries none.
 
 **Key Characteristics:**
 - Light ground with printed plate, black ink, hairline rules, square corners.
@@ -211,11 +211,11 @@ The only authored motion is `rule-out`: bar and void elements animate from `scal
 ## Do's and Don'ts
 
 ### Do:
-- **Do** keep the surface read-only and sourced from `GET /platforms` plus links to published platform records.
+- **Do** keep the surface read-only and sourced from `GET /v2/platforms` (revision D) plus links to published `/v2` platform records.
 - **Do** render only ICD-PHM-002 revision D fields and preserve the visible contract gap for fields that remain unpublished.
 - **Do** encode state as mark plus text; colour may reinforce measurements only.
 - **Do** use system grotesque and platform mono stacks only.
-- **Do** keep presentation routes out of the generated interface contract; `/openapi.json` must remain machine-readable ICD-PHM-002, not UI navigation.
+- **Do** keep presentation routes out of the generated interface contracts; `/openapi.json` and `/v2/openapi.json` must remain machine-readable ICD-PHM-002, not UI navigation.
 - **Do** draw absence as hatched reserved space when a question is not answerable from revision D.
 
 ### Don't:

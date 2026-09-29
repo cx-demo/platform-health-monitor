@@ -39,7 +39,7 @@ def _untrusted_age_to_none(value: object) -> object:
     return None
 
 
-# None means not reported or malformed: missing telemetry under PHM-RDY-1
+# None means not reported or malformed: missing telemetry under SYS-4412-R1
 # rule 6, never "operational", "no fault" or "fresh".
 TelemetryFlag = Annotated[bool | None, BeforeValidator(_untrusted_flag_to_none)]
 TelemetryTemperature = Annotated[

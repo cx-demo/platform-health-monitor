@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fleet Plate — Platform Health &amp; Mission Readiness Service</title>
-<meta name="description" content="A read-only statistical plate of the deployed platform fleet, drawn only from the fields ICD-PHM-002 publishes (revision D draft).">
+<meta name="description" content="A read-only statistical plate of the deployed platform fleet, drawn only from the fields ICD-PHM-002 revision D (draft) publishes on /v2.">
 
 <!--
   DIRECTION CONTRACT — SYS-4418 Fleet Plate
 
   THESIS: A statistical plate, not a status console. It renders only what
-  ICD-PHM-002 publishes (rev D draft, SYS-4412), and draws what the interface cannot answer as
+  ICD-PHM-002 rev D (draft, SYS-4412) publishes on /v2, and draws what the interface cannot answer as
   measured, dimensioned void. It refuses the dark operations-centre dashboard
   of traffic lights, gauge rings and sparklines.
 
@@ -644,7 +644,7 @@ body {
     <div>
       <h1 class="caption__title">Fleet plate — deployed platform health</h1>
       <p class="caption__standfirst">
-        Every figure on this sheet is read from <code>GET /platforms</code>. This plate is an
+        Every figure on this sheet is read from <code>GET /v2/platforms</code>. This plate is an
         ordinary consumer of ICD&#8209;PHM&#8209;002 revision D (draft) and holds no privileged access to
         the service, so whatever it cannot show you, no consumer can show you.
       </p>
@@ -652,7 +652,7 @@ body {
     <dl class="revision">
       <dt>Interface</dt><dd>ICD-PHM-002</dd>
       <dt>Revision</dt><dd>D (draft)</dd>
-      <dt>Service</dt><dd>PHMS 2.3.0</dd>
+      <dt>Service</dt><dd>PHMS 2.4.0 · /v2</dd>
       <dt>Requirement</dt><dd>SYS-4418 · SYS-4412</dd>
       <dt>Sheet</dt><dd>1 of 1</dd>
     </dl>
@@ -685,7 +685,7 @@ body {
 
     <p class="void__intro">
       Revision D (draft) publishes one derived readiness state per platform, shown in Figure 2,
-      under rule PHM&#8209;RDY&#8209;1. It does not publish the evidence behind that state. The two
+      under rule SYS&#8209;4412&#8209;R1. It does not publish the evidence behind that state. The two
       questions below remain unanswerable from the interface.
     </p>
 
@@ -729,13 +729,14 @@ body {
   <footer class="colophon">
     <p>
       <strong>Read-only.</strong> This sheet issues no command and holds no tasking authority. It
-      performs one request, <code>GET /platforms</code>, and draws the result.
+      performs one request, <code>GET /v2/platforms</code>, and draws the result.
     </p>
     <p>
       <strong>Source of figures.</strong> Published record for any platform is available directly
-      at <code>/platforms/{platformId}</code>. The full generated interface is at
-      <a href="/docs">/docs</a>, <a href="/redoc">/redoc</a> and
-      <a href="/openapi.json">/openapi.json</a>.
+      at <code>/v2/platforms/{platformId}</code>. The full generated interface is at
+      <a href="/v2/docs">/v2/docs</a>, <a href="/v2/redoc">/v2/redoc</a> and
+      <a href="/v2/openapi.json">/v2/openapi.json</a>. The revision C surface remains at
+      <code>/platforms</code> without readiness fields.
     </p>
     <p>
       <strong>Fleet data is synthetic</strong> and fixed in <code>src/repository.py</code> for
@@ -894,7 +895,7 @@ body {
              '<div class="row__scale">' +
              '<div class="grid-lines" aria-hidden="true">' + gridLines + '</div>' +
              subs + '</div>' +
-             '<a class="row__record" href="/platforms/' + encodeURIComponent(p.platformId) + '">' +
+             '<a class="row__record" href="/v2/platforms/' + encodeURIComponent(p.platformId) + '">' +
              'Published record</a>' +
              '</div></li>';
     }).join('');
@@ -927,7 +928,7 @@ body {
   skeleton('tally', 1);
   skeleton('measured', 3);
 
-  fetch('/platforms', { headers: { Accept: 'application/json' } })
+  fetch('/v2/platforms', { headers: { Accept: 'application/json' } })
     .then(function (response) {
       if (!response.ok) { throw new Error('HTTP ' + response.status); }
       return response.json();
@@ -945,7 +946,7 @@ body {
       document.body.classList.add('is-setting');
     })
     .catch(function (error) {
-      var body = 'The fleet record could not be read from <code>GET /platforms</code> — ' +
+      var body = 'The fleet record could not be read from <code>GET /v2/platforms</code> — ' +
                  '<code>' + esc(error.message) + '</code>. No figures are drawn, because a ' +
                  'plate drawn from a failed read would be indistinguishable from a plate ' +
                  'drawn from an empty fleet. Confirm the service is running, then reload.';

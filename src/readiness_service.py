@@ -9,10 +9,12 @@ from src.models import (
 )
 
 # SYS-4412: rule version published in ICD-PHM-002 rev D, not in the payload.
-READINESS_RULE_VERSION = "PHM-RDY-1"
+READINESS_RULE_VERSION = "SYS-4412-R1"
 
 NMC_TEMPERATURE_CELSIUS = 90.0
 PMC_TEMPERATURE_CELSIUS = 70.0
+ABSOLUTE_ZERO_CELSIUS = -273.15
+# Telemetry older than this many seconds is stale; exactly 300 s is fresh.
 STALE_TELEMETRY_AGE_SECONDS = 300
 
 
@@ -21,8 +23,9 @@ def _is_number(value: object) -> bool:
 
 
 def _valid_temperature(subsystem: Subsystem) -> float | None:
+    """Finite reading at or above absolute zero; anything else is unusable."""
     value = subsystem.temperature_celsius
-    if _is_number(value) and math.isfinite(value):
+    if _is_number(value) and math.isfinite(value) and value >= ABSOLUTE_ZERO_CELSIUS:
         return float(value)
     return None
 
@@ -34,7 +37,7 @@ def _reads_at_or_above(subsystem: Subsystem, threshold: float) -> bool:
 
 
 def _has_bad_telemetry(subsystem: Subsystem) -> bool:
-    """Missing, non-finite, malformed or stale telemetry (PHM-RDY-1 rule 6)."""
+    """Missing, non-finite, malformed or stale telemetry (SYS-4412-R1 rule 6)."""
     if _valid_temperature(subsystem) is None:
         return True
     if not isinstance(subsystem.operational, bool):
@@ -52,11 +55,11 @@ def _has_bad_telemetry(subsystem: Subsystem) -> bool:
         return True
     if age < 0:
         return True
-    return age >= STALE_TELEMETRY_AGE_SECONDS
+    return age > STALE_TELEMETRY_AGE_SECONDS
 
 
 def classify_readiness(platform: Platform) -> ReadinessAssessment:
-    """Apply rule PHM-RDY-1 (SYS-4412). First matching precedence wins."""
+    """Apply rule SYS-4412-R1. First matching precedence wins."""
     subsystems = platform.subsystems
     bad_telemetry = (
         not subsystems
@@ -71,14 +74,14 @@ def classify_readiness(platform: Platform) -> ReadinessAssessment:
         state = ReadinessState.NMC
     elif any(_reads_at_or_above(s, NMC_TEMPERATURE_CELSIUS) for s in subsystems):
         state = ReadinessState.NMC
-    elif platform.operational is False or any(
-        s.operational is False for s in subsystems
-    ):
+    elif platform.operational is False:
         state = ReadinessState.NMC
     elif any(_reads_at_or_above(s, PMC_TEMPERATURE_CELSIUS) for s in subsystems):
         state = ReadinessState.PMC
-    # Rule 5 (degraded but mission-capable) is reserved: no degraded signal
-    # is specified, so it never matches.
+    elif any(s.operational is False for s in subsystems):
+        # Rule 5: a subsystem reporting not operational is degraded but
+        # mission-capable.
+        state = ReadinessState.PMC
     elif bad_telemetry:
         state = ReadinessState.PMC
     else:
@@ -88,7 +91,7 @@ def classify_readiness(platform: Platform) -> ReadinessAssessment:
 
 
 def get_platform_summary(platform: Platform) -> dict:
-    readiness = classify_readiness(platform)
+    """ICD-PHM-002 rev C platform record, served on /platforms. No readiness."""
     return {
         "platformId": platform.platform_id,
         "designation": platform.designation,
@@ -104,6 +107,14 @@ def get_platform_summary(platform: Platform) -> dict:
             }
             for s in platform.subsystems
         ],
+    }
+
+
+def summarise_v2(platform: Platform) -> dict:
+    """ICD-PHM-002 rev D platform record, served on /v2 only (SYS-4412)."""
+    readiness = classify_readiness(platform)
+    return {
+        **get_platform_summary(platform),
         "readinessState": readiness.state.value,
         "readinessConfidence": readiness.confidence.value,
     }
