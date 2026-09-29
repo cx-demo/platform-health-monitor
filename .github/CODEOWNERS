@@ -1,0 +1,8 @@
+# Engineering authority owns the service implementation and the governance layer.
+# The interface control board owns the controlled interface and its conformance tests.
+
+/src/                    @engineering-authority
+/docs/icd/               @interface-control-board
+/tests/contract/         @interface-control-board
+/.github/workflows/      @engineering-authority
+/.github/rulesets/       @engineering-authority
