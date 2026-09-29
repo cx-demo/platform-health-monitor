@@ -1,0 +1,74 @@
+name: Engineering Change Request
+description: Formal engineering change derived from systems-engineering analysis
+title: "[SYS-XXXX] "
+labels: ["engineering-change", "requires-plan-approval"]
+body:
+  - type: input
+    id: requirement-id
+    attributes:
+      label: Requirement ID
+      placeholder: SYS-4412
+    validations:
+      required: true
+
+  - type: input
+    id: parent-requirement
+    attributes:
+      label: Parent requirement
+      placeholder: SYS-4400
+
+  - type: input
+    id: icd-reference
+    attributes:
+      label: Affected interface control document
+      placeholder: ICD-PHM-002 rev C
+
+  - type: dropdown
+    id: criticality
+    attributes:
+      label: Criticality classification
+      options:
+        - Safety-critical
+        - Mission-critical
+        - Decision-support / advisory
+        - Non-critical
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirement-statement
+    attributes:
+      label: Requirement statement
+      description: Shall-statement form
+    validations:
+      required: true
+
+  - type: textarea
+    id: m365-analysis
+    attributes:
+      label: Source analysis (Microsoft 365 Copilot)
+      description: Interface dependencies, operational risk, compliance considerations
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+    validations:
+      required: true
+
+  - type: textarea
+    id: known-risks
+    attributes:
+      label: Risks identified during analysis
+
+  - type: checkboxes
+    id: gates
+    attributes:
+      label: Required engineering gates
+      options:
+        - label: Implementation plan approved by a human engineer
+        - label: Independent verification complete
+        - label: Safety and security review complete
+        - label: Interface change assessed and ICD revised if required
+        - label: Traceability matrix updated
+        - label: Residual risk accepted by named engineering authority
