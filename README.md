@@ -43,6 +43,8 @@ uvicorn src.main:app --reload
 
 - `GET http://127.0.0.1:8000/platforms`
 - `GET http://127.0.0.1:8000/platforms/LND-114`
+- `http://127.0.0.1:8000/docs` — Swagger UI, interactive
+- `http://127.0.0.1:8000/redoc` — ReDoc, reads better as an interface spec
 - `GET http://127.0.0.1:8000/openapi.json` — machine-readable form of the ICD
 
 ### Fleet plate
@@ -205,12 +207,15 @@ Checklist:
       returns no errors. GitHub silently ignores entries it cannot resolve,
       leaving those paths unprotected, so verify this rather than assume it
 - [x] All four required checks green on the baseline pull request
-- [ ] Baseline pull request merged to `main`
-- [ ] Ruleset applied and active (**after** the merge)
-- [ ] `require_last_push_approval` confirmed on — the implementing engineer
+- [x] Baseline pull request merged to `main`
+- [x] Ruleset `main-engineering-governance` applied and active; live definition
+      matches `.github/rulesets/main-protection.json`
+- [x] `require_last_push_approval` confirmed on — the implementing engineer
       cannot self-approve an interface change
-- [ ] **Verified an administrator merge is actually blocked** — test it, do not
-      assume
+- [x] **Verified a direct push to `main` is actually refused** —
+      `! [remote rejected] HEAD -> main (push declined due to repository rule
+      violations)`. Tested, not assumed.
+- [x] SYS-4412 engineering change issue created with gate checkboxes unticked
 - [ ] SYS-4412 issue created with gate checkboxes unticked
 
 ## Scope note

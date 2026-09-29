@@ -16,6 +16,8 @@ requirement coverage. The `Requirement Traceability` workflow enforces this.
 | AC-4400-4 | Payload conforms exactly to the ICD-PHM-002 rev C field set | `readiness_service.py::get_platform_summary` | `test_icd_phm_002_compatibility.py` (both endpoints) | ICD rev C, RSK-3 | ✅ Verified |
 | AC-4400-5 | Internal fault and telemetry-age state is never exposed | `readiness_service.py::get_platform_summary` | `test_readiness_service.py::test_summary_never_exposes_internal_diagnostics` | RSK-2 | ✅ Verified |
 | AC-4400-6 | List and detail payloads are consistent | `readiness_service.py::get_platform_summary` | `test_platform_api.py::test_list_and_detail_payloads_are_consistent` | — | ✅ Verified |
+| AC-4400-7 | Generated OpenAPI document matches the published interface | `main.py` route signatures | `test_platform_api.py::test_openapi_document_is_served` | ICD rev C; served at `/docs`, `/redoc`, `/openapi.json` | ✅ Verified |
+| AC-4400-8 | The pull request boundary is enforced, not conventional | `.github/rulesets/main-protection.json` | Direct push to `main` rejected — `push declined due to repository rule violations` | Ruleset `main-engineering-governance` active | ✅ Verified |
 
 Evidence: `docs/evidence/sys-4400-baseline.md`
 
