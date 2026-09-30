@@ -112,6 +112,7 @@ impact assessment.
   rulesets/main-protection.json    branch protection, applied by an admin
   workflows/                       ci · codeql · dependency-review
 demo/sys-4412-issue.md             body for the SYS-4412 engineering change issue
+demo/sys-4420-issue.md             proposed telemetry freshness and coverage requirement
 docs/
   architecture.md
   icd/ICD-PHM-002.md               controlled interface document (rev D draft)
