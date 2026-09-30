@@ -14,3 +14,9 @@ reports/
 
 # Impeccable design-hook cache (session-local, contains absolute paths)
 .impeccable/hook.cache.json
+
+# SYS-4419 browser test runner (Playwright)
+node_modules/
+test-results/
+playwright-report/
+.playwright-browsers/

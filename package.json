@@ -1,0 +1,11 @@
+{
+  "name": "platform-health-monitor-browser-tests",
+  "private": true,
+  "description": "SYS-4419 browser behaviour tests for the /dashboard fleet plate. Not a runtime dependency of the service.",
+  "scripts": {
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

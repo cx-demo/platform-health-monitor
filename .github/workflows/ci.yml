@@ -36,6 +36,24 @@ jobs:
       - name: Coverage gate
         run: pytest --cov=src --cov-report=term --cov-fail-under=90
 
+      # SYS-4419: browser behaviour tests for the /dashboard fleet plate.
+      # Python coverage does not measure browser-side code, so this suite
+      # runs in addition to, not instead of, the gate above.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install browser test runner
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Browser behaviour tests
+        run: npx playwright test
+        env:
+          CI: "true"
+
       - name: Upload test evidence
         if: always()
         uses: actions/upload-artifact@v4

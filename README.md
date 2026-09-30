@@ -58,6 +58,15 @@ It is deliberately excluded from `/openapi.json`: that document is the
 machine-readable form of ICD-PHM-002, and adding a path to it would be an
 interface change.
 
+Figure 4 (SYS-4419) adds an advisory maintenance review shortlist to the same
+page. It filters by platform type, applies a reviewer-entered threshold
+(0–150 °C, one decimal, no default) and exports the displayed shortlist as a
+browser-generated CSV. Review reasons are computed in the browser from rev C
+fields only; the API, OpenAPI document and ICD are unchanged. The shortlist is
+not a readiness classification. CSV export stays disabled until the
+data-owner-approved handling marking is set in the page's
+`phm-handling-marking` meta tag.
+
 ## Test it
 
 ```bash
@@ -69,6 +78,15 @@ pytest --cov=src --cov-report=term --cov-fail-under=90
 
 All four run in CI under the check context
 `Unit, integration and contract tests`.
+
+Browser behaviour tests for the fleet plate (SYS-4419) run in the same CI job
+with Playwright. Python coverage does not measure browser-side code.
+
+```bash
+npm ci
+npx playwright install chromium
+npx playwright test            # serves /dashboard via uvicorn; set PHM_PYTHON if python is not on PATH
+```
 
 ## Interface control
 
@@ -104,7 +122,7 @@ docs/
   architecture.md
   icd/ICD-PHM-002.md               controlled interface document (rev C)
 src/                               models · repository · readiness_service · main
-tests/                             unit · integration · contract
+tests/                             unit · integration · contract · browser (Playwright)
 ```
 
 ## Governance layer

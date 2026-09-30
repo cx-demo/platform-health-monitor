@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fleet Plate — Platform Health &amp; Mission Readiness Service</title>
 <meta name="description" content="A read-only statistical plate of the deployed platform fleet, drawn only from the fields ICD-PHM-002 revision C publishes.">
+<!--
+  SYS-4419 handling marking. The CSV handover export writes this text verbatim
+  as its first row. It must be the data-owner-approved wording recorded on
+  issue #12. While it is empty, the export control stays disabled: no marking
+  text is invented here.
+-->
+<meta name="phm-handling-marking" content="">
 
 <!--
   DIRECTION CONTRACT — SYS-4418 Fleet Plate
@@ -562,6 +569,162 @@ body {
 .notice--error .notice__head { color: var(--vermillion); }
 .notice code { font-family: var(--mono); font-size: 0.75rem; }
 
+.notice + .notice { margin-top: calc(var(--u) * 1.5); }
+.notice--historical {
+  border-width: 2px;
+  background: repeating-linear-gradient(
+    45deg, transparent 0 5px, var(--ink-rule) 5px 6px
+  );
+}
+.notice .button { margin-top: calc(var(--u) * 1.5); }
+
+/* ── retrieval ledger (SYS-4419) ───────────────────────────────────── */
+
+.retrieval {
+  margin-top: calc(var(--u) * 3);
+  display: grid;
+  gap: calc(var(--u) * 2);
+}
+
+.retrieval__bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: calc(var(--u) * 2) calc(var(--u) * 4);
+}
+
+.retrieval__times {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 1) calc(var(--u) * 4);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.retrieval__times dt {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-2);
+}
+.retrieval__times dd { margin: 0; font-family: var(--mono); font-size: 0.6875rem; }
+
+/* ── controls ──────────────────────────────────────────────────────── */
+
+.button {
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--plate);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  padding: calc(var(--u) * 1) calc(var(--u) * 2);
+  cursor: pointer;
+}
+.button:hover:not(:disabled) { background: var(--paper); }
+.button:disabled { cursor: not-allowed; color: var(--ink-2); border-style: dashed; }
+.button:focus-visible,
+.field select:focus-visible,
+.field input:focus-visible {
+  outline: 2px solid var(--vermillion);
+  outline-offset: 3px;
+}
+
+/* ── Figure 4 · review shortlist ───────────────────────────────────── */
+
+.review__advisory {
+  margin: 0 0 calc(var(--u) * 3);
+  max-width: 70ch;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.review__advisory strong { color: var(--ink); }
+
+.review__controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: calc(var(--u) * 2.5) calc(var(--u) * 4);
+  align-items: start;
+  margin-bottom: calc(var(--u) * 3);
+}
+
+.field { display: grid; gap: calc(var(--u) * 0.75); }
+.field label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.field select,
+.field input {
+  font-family: var(--mono);
+  font-size: 0.875rem;
+  color: var(--ink);
+  background: var(--plate);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  padding: calc(var(--u) * 0.75) calc(var(--u) * 1);
+  max-width: 16rem;
+}
+.field input[aria-invalid="true"] { border-width: 2px; border-style: dashed; }
+.field__help { margin: 0; max-width: 52ch; font-size: 0.8125rem; line-height: 1.5; color: var(--ink-2); }
+.field__error { margin: 0; font-size: 0.8125rem; font-weight: 700; line-height: 1.5; }
+.field__error:empty { display: none; }
+
+.review__count { margin: calc(var(--u) * 2) 0 0; font-size: 0.875rem; }
+.review__gaps { margin: calc(var(--u) * 0.75) 0 0; font-size: 0.8125rem; color: var(--ink-2); }
+
+.review__rows { margin: calc(var(--u) * 2) 0 0; padding: 0; list-style: none; }
+.review__rows.is-historical { opacity: 0.8; }
+
+.review__row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 16rem) minmax(0, 1fr);
+  gap: calc(var(--u) * 1) calc(var(--u) * 3);
+  padding: calc(var(--u) * 2) 0;
+  border-bottom: 1px solid var(--ink-rule);
+}
+.review__row:last-child { border-bottom: 0; }
+
+.review__name { margin: 0; font-size: 0.9375rem; font-weight: 700; line-height: 1.25; }
+.review__id,
+.review__type {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: var(--mono);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.review__reasons { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.25rem; font-size: 0.8125rem; line-height: 1.45; }
+.review__reasons li { display: grid; grid-template-columns: 1.25rem minmax(0, 1fr); overflow-wrap: anywhere; }
+.review__glyph { font-family: var(--mono); font-weight: 700; }
+
+.review__clear { margin: calc(var(--u) * 2) 0 0; font-size: 0.8125rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.review__clear:empty { display: none; }
+
+.review__export {
+  margin-top: calc(var(--u) * 3);
+  padding-top: calc(var(--u) * 2);
+  border-top: 1px solid var(--ink);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: calc(var(--u) * 1.5) calc(var(--u) * 2.5);
+}
+
+@media (max-width: 54rem) {
+  .review__row { grid-template-columns: minmax(0, 1fr); }
+}
+
 .skeleton { display: grid; gap: calc(var(--u) * 2.5); }
 .skeleton__row {
   height: 3.5rem;
@@ -642,10 +805,24 @@ body {
       <dt>Interface</dt><dd>ICD-PHM-002</dd>
       <dt>Revision</dt><dd>C</dd>
       <dt>Service</dt><dd>PHMS 2.3.0</dd>
-      <dt>Requirement</dt><dd>SYS-4418</dd>
+      <dt>Requirement</dt><dd>SYS-4418 · SYS-4419</dd>
       <dt>Sheet</dt><dd>1 of 1</dd>
     </dl>
   </header>
+
+  <!-- ── Retrieval ledger · SYS-4419 ─────────────────────────────── -->
+  <section class="retrieval" aria-labelledby="retrieval-title">
+    <h2 class="visually-hidden" id="retrieval-title">Retrieval</h2>
+    <div class="retrieval__bar">
+      <dl class="retrieval__times">
+        <div><dt>Retrieved · this browser's clock</dt><dd id="retrieved-at">Not yet retrieved</dd></div>
+        <div><dt>Observed</dt><dd>Not published at revision C</dd></div>
+        <div><dt>Telemetry freshness</dt><dd>Unknown</dd></div>
+      </dl>
+      <button type="button" class="button" id="refresh" data-action="retry">Refresh fleet record</button>
+    </div>
+    <div id="retrieval-status" role="status" aria-live="polite"></div>
+  </section>
 
   <!-- ── Figure 1 · tally ──────────────────────────────────────────── -->
   <section class="plate" aria-labelledby="tally-title">
@@ -728,6 +905,49 @@ body {
     </p>
   </section>
 
+  <!-- ── Figure 4 · maintenance review shortlist · SYS-4419 ──────────── -->
+  <section class="plate" aria-labelledby="review-title">
+    <div class="plate__head">
+      <h2 class="plate__title" id="review-title">Figure 4 · Maintenance review shortlist</h2>
+      <span class="plate__no">Advisory · SYS-4419 · revision C fields only</span>
+    </div>
+
+    <p class="review__advisory">
+      <strong>Advisory.</strong> This list prompts engineering investigation. It is not a readiness
+      classification, it does not authorise tasking and it shows no operating limit. A platform
+      absent from this list has <em>not</em> been shown to be ready: revision C carries no
+      observation time and cannot show withheld faults.
+    </p>
+
+    <div class="review__controls">
+      <div class="field">
+        <label for="review-type">Platform type</label>
+        <select id="review-type" disabled></select>
+      </div>
+      <div class="field">
+        <label for="review-threshold">Review threshold, degrees Celsius (°C)</label>
+        <input id="review-threshold" type="text" inputmode="decimal" autocomplete="off"
+               spellcheck="false" required aria-required="true" aria-invalid="false"
+               aria-describedby="review-threshold-help review-threshold-error">
+        <p class="field__help" id="review-threshold-help">
+          A review filter you choose, not an approved operating limit. There is no default.
+          Enter 0 to 150 °C with at most one decimal place.
+        </p>
+        <p class="field__error" id="review-threshold-error" role="alert"></p>
+      </div>
+    </div>
+
+    <div id="review-status" role="status" aria-live="polite"></div>
+    <ol class="review__rows" id="review-list" aria-label="Shortlisted platforms"></ol>
+    <p class="review__clear" id="review-clear"></p>
+
+    <div class="review__export">
+      <button type="button" class="button" id="review-export" disabled
+              aria-describedby="review-export-why">Export displayed shortlist (CSV)</button>
+      <p class="field__help" id="review-export-why">Export disabled: no fleet record retrieved yet.</p>
+    </div>
+  </section>
+
   <footer class="colophon">
     <p>
       <strong>Read-only.</strong> This sheet issues no command and holds no tasking authority. It
@@ -747,6 +967,277 @@ body {
   </footer>
 
 </div>
+
+<script>
+/* SYS-4419 · maintenance review shortlist — pure functions, no DOM access.
+   Browser-only by approved exception to the classification-location rule
+   (recorded on #12). Reads only ICD-PHM-002 rev C fields. It never infers a
+   readiness class: absence of a review reason is not evidence of readiness. */
+(function (global) {
+  "use strict";
+
+  var KNOWN_TYPES = ["LAND", "AIR", "MISSION_SYSTEM"];
+  var THRESHOLD_MIN_C = 0;
+  var THRESHOLD_MAX_C = 150;
+
+  // Display precedence only; inclusion is any-match.
+  var REASONS = {
+    MALFORMED_RECORD:          { rank: 1, glyph: "\u2298" },
+    UNRECOGNISED_TYPE:         { rank: 1, glyph: "\u2298" },
+    PLATFORM_NOT_OPERATIONAL:  { rank: 2, glyph: "\u25A0" },
+    SUBSYSTEM_NOT_OPERATIONAL: { rank: 3, glyph: "\u25A0" },
+    READING_UNAVAILABLE:       { rank: 4, glyph: "\u25C7" },
+    AT_OR_ABOVE_THRESHOLD:     { rank: 5, glyph: "\u25B2" },
+    NO_SUBSYSTEMS:             { rank: 6, glyph: "\u2298" }
+  };
+
+  var FILTERS = ["ALL"].concat(KNOWN_TYPES, ["UNRECOGNISED"]);
+
+  function isObject(v) { return v !== null && typeof v === "object" && !Array.isArray(v); }
+  function isText(v) { return typeof v === "string" && v.length > 0; }
+  function isFiniteNumber(v) { return typeof v === "number" && isFinite(v); }
+  function subsystemsOf(record) {
+    return isObject(record) && Array.isArray(record.subsystems) ? record.subsystems : [];
+  }
+
+  function isWellFormed(record) {
+    if (!isObject(record) || !isText(record.platformId) || !isText(record.designation) ||
+        typeof record.platformType !== "string" || typeof record.operational !== "boolean" ||
+        !Array.isArray(record.subsystems)) {
+      return false;
+    }
+    return record.subsystems.every(function (s) {
+      return isObject(s) && isText(s.subsystemId) && typeof s.name === "string" &&
+             typeof s.operational === "boolean" &&
+             Object.prototype.hasOwnProperty.call(s, "temperatureCelsius") &&
+             (s.temperatureCelsius === null || typeof s.temperatureCelsius === "number");
+    });
+  }
+
+  function isKnownType(record) {
+    return isObject(record) && KNOWN_TYPES.indexOf(record.platformType) >= 0;
+  }
+
+  function subsystemLabel(s, index) {
+    return isObject(s) && isText(s.subsystemId)
+      ? s.subsystemId
+      : "subsystem " + (index + 1) + " (no identifier)";
+  }
+
+  function formatThreshold(thresholdC) { return thresholdC.toFixed(1) + " \u00B0C"; }
+
+  function reason(code, text, subsystems) {
+    return { code: code, rank: REASONS[code].rank, glyph: REASONS[code].glyph,
+             text: text, subsystems: subsystems || [] };
+  }
+
+  // Returns every applicable reason, ordered by display precedence.
+  // thresholdC null means no valid threshold: the temperature rule is inactive.
+  function reviewReasons(record, thresholdC) {
+    var reasons = [];
+    var subs = subsystemsOf(record);
+    var rec = isObject(record) ? record : {};
+
+    if (!isWellFormed(record)) {
+      reasons.push(reason("MALFORMED_RECORD",
+        "Data unavailable \u2014 record does not match the published revision C shape"));
+    }
+    if (!isKnownType(record)) {
+      reasons.push(reason("UNRECOGNISED_TYPE",
+        "Data unavailable \u2014 platform type not recognised" +
+        (typeof rec.platformType === "string" ? ": " + rec.platformType : "")));
+    }
+    if (rec.operational === false) {
+      reasons.push(reason("PLATFORM_NOT_OPERATIONAL", "Platform reports not operational"));
+    }
+
+    var down = [], gaps = [], hot = [];
+    subs.forEach(function (s, i) {
+      var label = subsystemLabel(s, i);
+      if (!isObject(s)) { gaps.push({ id: label, text: label + " record missing" }); return; }
+      if (s.operational === false) { down.push(label); }
+      var t = s.temperatureCelsius;
+      if (!isFiniteNumber(t)) {
+        gaps.push({ id: label, text: label + (t === null || t === undefined
+          ? " not published" : " invalid value") });
+      } else if (thresholdC !== null && thresholdC !== undefined && t >= thresholdC) {
+        hot.push({ id: label, text: label + " " + String(t) + " \u00B0C" });
+      }
+    });
+
+    if (down.length) {
+      reasons.push(reason("SUBSYSTEM_NOT_OPERATIONAL",
+        "Subsystem reports not operational: " + down.join(", "), down));
+    }
+    if (gaps.length) {
+      reasons.push(reason("READING_UNAVAILABLE",
+        "Reading unavailable or invalid, not treated as zero: " +
+        gaps.map(function (g) { return g.text; }).join(", "),
+        gaps.map(function (g) { return g.id; })));
+    }
+    if (hot.length) {
+      reasons.push(reason("AT_OR_ABOVE_THRESHOLD",
+        "At or above review threshold " + formatThreshold(thresholdC) + ": " +
+        hot.map(function (h) { return h.text; }).join(", "),
+        hot.map(function (h) { return h.id; })));
+    }
+    if (isObject(record) && Array.isArray(record.subsystems) && record.subsystems.length === 0) {
+      reasons.push(reason("NO_SUBSYSTEMS", "Data unavailable \u2014 no subsystems published"));
+    }
+
+    return reasons.sort(function (a, b) { return a.rank - b.rank; });
+  }
+
+  // Validates reviewer input. No default: empty input is an error, never a value.
+  function parseThreshold(raw) {
+    var bounds = THRESHOLD_MIN_C + " to " + THRESHOLD_MAX_C + " \u00B0C";
+    if (typeof raw === "number") {
+      if (!isFinite(raw)) {
+        return { ok: false, code: "NON_FINITE", message: "Invalid threshold: non-finite values are rejected. Enter " + bounds + "." };
+      }
+      raw = String(raw);
+    }
+    if (typeof raw !== "string") {
+      return { ok: false, code: "FORMAT", message: "Invalid threshold: enter a number in \u00B0C." };
+    }
+    var text = raw.trim();
+    if (text === "") {
+      return { ok: false, code: "REQUIRED", message: "Threshold required: enter " + bounds + ". There is no default." };
+    }
+    if (/^[+-]?(nan|inf|infinity|\u221E)$/i.test(text)) {
+      return { ok: false, code: "NON_FINITE", message: "Invalid threshold: non-finite values are rejected. Enter " + bounds + "." };
+    }
+    if (!/^[+-]?\d+(\.\d)?$/.test(text)) {
+      return { ok: false, code: "FORMAT", message: "Invalid threshold: enter a number in \u00B0C with at most one decimal place." };
+    }
+    var value = Number(text);
+    if (!isFinite(value)) {
+      return { ok: false, code: "NON_FINITE", message: "Invalid threshold: non-finite values are rejected. Enter " + bounds + "." };
+    }
+    if (value < THRESHOLD_MIN_C || value > THRESHOLD_MAX_C) {
+      return { ok: false, code: "RANGE", message: "Invalid threshold: must be " + bounds + "." };
+    }
+    return { ok: true, value: value === 0 ? 0 : value };
+  }
+
+  function matchesFilter(record, filter) {
+    if (filter === "ALL") { return true; }
+    if (filter === "UNRECOGNISED") { return !isKnownType(record); }
+    return isObject(record) && record.platformType === filter;
+  }
+
+  function filterLabel(filter) {
+    if (filter === "ALL") { return "All platforms"; }
+    if (filter === "UNRECOGNISED") { return "Unrecognised type"; }
+    return String(filter).replace(/_/g, " ");
+  }
+
+  function typeCounts(records) {
+    var counts = {};
+    FILTERS.forEach(function (f) {
+      counts[f] = records.filter(function (r) { return matchesFilter(r, f); }).length;
+    });
+    return counts;
+  }
+
+  function idOf(record) {
+    return isObject(record) && isText(record.platformId) ? record.platformId : "";
+  }
+
+  // One row per record, all reasons attached; deterministic order.
+  function buildShortlist(records, filter, thresholdC) {
+    var matching = records.filter(function (r) { return matchesFilter(r, filter); });
+    var rows = [], clear = [], readingGaps = 0;
+    matching.forEach(function (record) {
+      var reasons = reviewReasons(record, thresholdC);
+      reasons.forEach(function (r) {
+        if (r.code === "READING_UNAVAILABLE") { readingGaps += r.subsystems.length; }
+      });
+      (reasons.length ? rows : clear).push({ record: record, reasons: reasons });
+    });
+    rows.sort(function (a, b) {
+      return (a.reasons[0].rank - b.reasons[0].rank) ||
+             (idOf(a.record) < idOf(b.record) ? -1 : idOf(a.record) > idOf(b.record) ? 1 : 0);
+    });
+    return { filter: filter, thresholdC: thresholdC, matchingCount: matching.length,
+             rows: rows, clear: clear, readingGaps: readingGaps };
+  }
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+  function formatRetrieval(date) {
+    var offset = -date.getTimezoneOffset();
+    var sign = offset >= 0 ? "+" : "-";
+    var abs = Math.abs(offset);
+    var zone = sign + pad(Math.floor(abs / 60)) + ":" + pad(abs % 60);
+    var day = date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate());
+    var time = pad(date.getHours()) + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+    var tz = "";
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch (e) { tz = ""; }
+    return { iso: day + "T" + time + zone, display: day + " " + time + " UTC" + zone, timeZone: tz,
+             compact: day.replace(/-/g, "") + "T" + time.replace(/:/g, "") + zone.replace(":", "") };
+  }
+
+  // RFC 4180 quoting; cells that a spreadsheet could read as a formula are
+  // prefixed with an apostrophe so they stay text.
+  function csvCell(value) {
+    var text = value === null || value === undefined ? "" : String(value);
+    if (/^[=+\-@\t\r]/.test(text)) { text = "'" + text; }
+    return '"' + text.replace(/"/g, '""') + '"';
+  }
+
+  function recordText(record, field) {
+    if (!isObject(record)) { return "(record unavailable)"; }
+    var v = record[field];
+    return v === null || v === undefined || v === "" ? "(not published)" : String(v);
+  }
+
+  function buildCsv(view, context) {
+    var retrieved = formatRetrieval(context.retrievedAt);
+    var lines = [
+      ["Handling marking", context.marking],
+      ["Requirement", "SYS-4419 maintenance review shortlist (advisory)"],
+      ["Scope", "Advisory review prompt only. Not a readiness classification, tasking authority or operating limit. Absence from this list is not evidence of readiness."],
+      ["Platform type filter", filterLabel(view.filter)],
+      ["Review threshold (\u00B0C)", view.thresholdC.toFixed(1) + " \u00B0C \u2014 reviewer-selected review filter, not an operating limit"],
+      ["Retrieved at", retrieved.iso + " (this browser's clock" + (retrieved.timeZone ? ", " + retrieved.timeZone : "") + "; time of retrieval, not observation)"],
+      ["Observed at", "Not published at ICD-PHM-002 revision C; telemetry freshness unknown"],
+      ["Shortlisted", view.rows.length + " of " + view.matchingCount + " matching platforms"],
+      [],
+      ["platformId", "designation", "platformType", "reviewReasons"]
+    ];
+    if (!view.rows.length) {
+      lines.push(["", "", "", "Empty shortlist: no matching platform met a review rule. Not evidence of readiness."]);
+    }
+    view.rows.forEach(function (row) {
+      lines.push([
+        recordText(row.record, "platformId"),
+        recordText(row.record, "designation"),
+        recordText(row.record, "platformType"),
+        row.reasons.map(function (r) { return r.text; }).join("\n")
+      ]);
+    });
+    return lines.map(function (cells) { return cells.map(csvCell).join(","); }).join("\r\n") + "\r\n";
+  }
+
+  global.FleetReview = Object.freeze({
+    KNOWN_TYPES: KNOWN_TYPES.slice(),
+    FILTERS: FILTERS.slice(),
+    THRESHOLD_MIN_C: THRESHOLD_MIN_C,
+    THRESHOLD_MAX_C: THRESHOLD_MAX_C,
+    isWellFormed: isWellFormed,
+    reviewReasons: reviewReasons,
+    parseThreshold: parseThreshold,
+    matchesFilter: matchesFilter,
+    filterLabel: filterLabel,
+    typeCounts: typeCounts,
+    buildShortlist: buildShortlist,
+    formatRetrieval: formatRetrieval,
+    csvCell: csvCell,
+    buildCsv: buildCsv
+  });
+})(window);
+</script>
 
 <script>
 (function () {
@@ -780,7 +1271,9 @@ body {
       '<rect x="6" y="14" width="52" height="28"/><rect x="2" y="42" width="60" height="4"/>'
   };
 
-  function sign(type) { return SIGNS[type] || SIGNS.DEFAULT; }
+  function sign(type) {
+    return Object.prototype.hasOwnProperty.call(SIGNS, type) ? SIGNS[type] : SIGNS.DEFAULT;
+  }
 
   function svg(type, cls) {
     return '<svg class="' + cls + '" viewBox="0 0 64 48" role="presentation" ' +
@@ -801,14 +1294,21 @@ body {
 
   function pct(value) { return Math.max(0, Math.min(100, (value / SCALE_MAX) * 100)); }
 
+  // A record that is not an object is drawn as an empty record, never dropped.
+  function asRecord(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : {};
+  }
+  function subsOf(p) { return Array.isArray(p.subsystems) ? p.subsystems.map(asRecord) : []; }
+
   /* ── Figure 1 ──────────────────────────────────────────────────── */
 
-  function renderTally(platforms) {
-    var serviceable = platforms.filter(function (p) { return p.operational; }).length;
+  function renderTally(records) {
+    var platforms = records.map(asRecord);
+    var serviceable = platforms.filter(function (p) { return p.operational === true; }).length;
     var total = platforms.length;
 
     var signs = platforms.map(function (p) {
-      return '<li class="tally__sign' + (p.operational ? '' : ' tally__sign--outline') + '">' +
+      return '<li class="tally__sign' + (p.operational === true ? '' : ' tally__sign--outline') + '">' +
              svg(p.platformType, '') +
              '<span class="tally__label">' + esc(p.platformId) + '</span></li>';
     }).join('');
@@ -830,10 +1330,11 @@ body {
 
   /* ── Figure 2 ──────────────────────────────────────────────────── */
 
-  function renderMeasured(platforms) {
+  function renderMeasured(records) {
+    var platforms = records.map(asRecord);
     var readings = [];
     platforms.forEach(function (p) {
-      (p.subsystems || []).forEach(function (s) {
+      subsOf(p).forEach(function (s) {
         if (typeof s.temperatureCelsius === 'number' && isFinite(s.temperatureCelsius)) {
           readings.push({ platform: p, sub: s });
         }
@@ -860,7 +1361,7 @@ body {
       '</div></div></div>';
 
     var rows = platforms.map(function (p, i) {
-      var subs = (p.subsystems || []).map(function (s, j) {
+      var subs = subsOf(p).map(function (s, j) {
         var value = s.temperatureCelsius;
         var has = typeof value === 'number' && isFinite(value);
         var isPeak = peak && has && s === peak.sub;
@@ -890,8 +1391,10 @@ body {
              '<span class="row__id">' + esc(p.platformId) + ' · ' +
              esc(String(p.platformType).replace(/_/g, ' ')) + '</span></h3></div>' +
              '<p class="row__state"><span class="mark' +
-             (p.operational ? ' mark--filled' : '') + '" aria-hidden="true"></span>' +
-             (p.operational ? 'Reports operational' : 'Reports not operational') + '</p>' +
+             (p.operational === true ? ' mark--filled' : '') + '" aria-hidden="true"></span>' +
+             (p.operational === true ? 'Reports operational'
+               : p.operational === false ? 'Reports not operational'
+               : 'Operational state not published') + '</p>' +
              '<div class="row__scale">' +
              '<div class="grid-lines" aria-hidden="true">' + gridLines + '</div>' +
              subs + '</div>' +
@@ -926,34 +1429,293 @@ body {
       rows + '</div>';
   }
 
-  skeleton('tally', 1);
-  skeleton('measured', 3);
+  /* ── retrieval, failure states and Figure 4 · SYS-4419 ─────────── */
 
-  fetch('/platforms', { headers: { Accept: 'application/json' } })
-    .then(function (response) {
-      if (!response.ok) { throw new Error('HTTP ' + response.status); }
-      return response.json();
-    })
-    .then(function (platforms) {
-      if (!Array.isArray(platforms) || platforms.length === 0) {
-        notice('tally', 'empty', 'No platforms published',
-          'The service returned an empty fleet. Nothing is withheld and nothing is wrong ' +
-          'with this sheet — there is simply no platform on the interface to draw.');
-        document.getElementById('measured').innerHTML = '';
-        return;
+  var FR = window.FleetReview;
+  var state = {
+    records: null,      // last successfully retrieved array, never replaced by a failure
+    retrievedAt: null,  // client clock at retrieval; not an observation time
+    loading: false,
+    failure: null,      // 'api' | 'invalid' when nothing has ever been retrieved
+    historical: null,   // { failedAt, kind } after a failed refresh over prior data
+    touched: false,
+    view: null          // the shortlist currently displayed, exported verbatim
+  };
+
+  // Fixed, generic wording: no transport or parser detail reaches the page.
+  var FAILURE = {
+    api: {
+      head: 'Fleet record unavailable',
+      body: 'The fleet record could not be read from <code>GET /platforms</code>. No figures ' +
+            'are drawn, because a plate drawn from a failed read would be indistinguishable ' +
+            'from a plate drawn from an empty fleet. Confirm the service is running, then retry.'
+    },
+    invalid: {
+      head: 'Response not recognised',
+      body: '<code>GET /platforms</code> answered, but not with a list of platform records. ' +
+            'No figures are drawn and this is not shown as an empty fleet. Retry, or report ' +
+            'the response to the service owner.'
+    }
+  };
+
+  function el(id) { return document.getElementById(id); }
+
+  function retryButton() {
+    return ' <button type="button" class="button" data-action="retry">Retry</button>';
+  }
+
+  function block(kind, head, body, extra) {
+    return '<div class="notice notice--' + kind + '"><span class="notice__head">' + head +
+           '</span>' + body + (extra || '') + '</div>';
+  }
+
+  function marking() {
+    var meta = document.querySelector('meta[name="phm-handling-marking"]');
+    return meta ? String(meta.getAttribute('content') || '').trim() : '';
+  }
+
+  function stamp(date) { return esc(FR.formatRetrieval(date).display); }
+
+  function failureError(kind) {
+    var error = new Error(kind);
+    error.phmKind = kind;
+    return error;
+  }
+
+  function renderRetrieval() {
+    var status = el('retrieval-status');
+    el('refresh').disabled = state.loading;
+    el('retrieved-at').textContent = state.retrievedAt
+      ? FR.formatRetrieval(state.retrievedAt).display + (state.historical ? ' · historical' : '')
+      : (state.loading ? 'Retrieving…' : 'Not yet retrieved');
+
+    if (state.historical) {
+      status.innerHTML = block('historical', 'Historical — not current',
+        'A refresh at ' + stamp(state.historical.failedAt) + ' failed (' +
+        FAILURE[state.historical.kind].head.toLowerCase() + '). Every figure on this sheet ' +
+        'still shows the record retrieved at ' + stamp(state.retrievedAt) + '. Handover ' +
+        'export is disabled until a refresh succeeds.', retryButton());
+    } else if (state.loading && state.records) {
+      status.innerHTML = block('info', 'Refreshing',
+        'Reading <code>GET /platforms</code>. The figures below still show the previous retrieval.');
+    } else {
+      status.innerHTML = '';
+    }
+  }
+
+  function fillTypes() {
+    var select = el('review-type');
+    var previous = select.value || 'ALL';
+    var counts = FR.typeCounts(state.records);
+    select.innerHTML = FR.FILTERS.map(function (f) {
+      return '<option value="' + f + '">' + esc(FR.filterLabel(f) + ' (' + counts[f] + ')') +
+             '</option>';
+    }).join('');
+    select.value = FR.FILTERS.indexOf(previous) >= 0 ? previous : 'ALL';
+    select.disabled = false;
+  }
+
+  function text(value, fallback) {
+    return typeof value === 'string' && value.length > 0 ? value : fallback;
+  }
+
+  function reviewRow(row) {
+    var r = asRecord(row.record);
+    var n = row.reasons.length;
+    return '<li class="review__row"><div>' +
+           '<h3 class="review__name">' + esc(text(r.designation, '(no designation published)')) + '</h3>' +
+           '<span class="review__id">' + esc(text(r.platformId, '(no identifier published)')) + '</span>' +
+           '<span class="review__type">' + esc(text(r.platformType, '(no type published)').replace(/_/g, ' ')) +
+           ' · ' + n + (n === 1 ? ' reason' : ' reasons') + '</span></div>' +
+           '<ul class="review__reasons" aria-label="Review reasons">' +
+           row.reasons.map(function (x) {
+             return '<li data-reason="' + x.code + '"><span class="review__glyph" aria-hidden="true">' +
+                    x.glyph + '</span><span>' + esc(x.text) + '</span></li>';
+           }).join('') + '</ul></li>';
+  }
+
+  function exportState(disabledReason, readyText) {
+    el('review-export').disabled = Boolean(disabledReason);
+    el('review-export-why').textContent = disabledReason
+      ? 'Export disabled: ' + disabledReason
+      : readyText;
+  }
+
+  function renderReview() {
+    var input = el('review-threshold');
+    var parsed = FR.parseThreshold(input.value);
+    var showError = !parsed.ok && (state.touched || input.value.trim() !== '');
+    el('review-threshold-error').textContent = showError ? parsed.message : '';
+    input.setAttribute('aria-invalid', showError ? 'true' : 'false');
+
+    var status = el('review-status');
+    var list = el('review-list');
+    var clear = el('review-clear');
+    list.innerHTML = '';
+    list.className = 'review__rows';
+    clear.textContent = '';
+    state.view = null;
+
+    if (!state.records) {
+      el('review-type').disabled = true;
+      if (state.loading) {
+        status.innerHTML = block('info', 'Reading GET /platforms',
+          'No shortlist yet: the fleet record has not been retrieved.');
+        return exportState('no fleet record retrieved yet.');
       }
-      renderTally(platforms);
-      renderMeasured(platforms);
-      document.body.classList.add('is-setting');
-    })
-    .catch(function (error) {
-      var body = 'The fleet record could not be read from <code>GET /platforms</code> — ' +
-                 '<code>' + esc(error.message) + '</code>. No figures are drawn, because a ' +
-                 'plate drawn from a failed read would be indistinguishable from a plate ' +
-                 'drawn from an empty fleet. Confirm the service is running, then reload.';
-      notice('tally', 'error', 'Fleet record unavailable', body);
-      document.getElementById('measured').innerHTML = '';
-    });
+      var failure = FAILURE[state.failure] || FAILURE.api;
+      status.innerHTML = block('error', failure.head,
+        'No shortlist is drawn. A failed read is neither an empty fleet nor an empty shortlist.',
+        retryButton());
+      return exportState('no fleet record was retrieved.');
+    }
+
+    if (state.records.length === 0) {
+      status.innerHTML = block('empty', 'No platforms published',
+        'The service returned 0 platform records, so there is nothing to review. ' +
+        'This is an empty fleet, not an empty shortlist.');
+      return exportState(state.historical
+        ? 'data is historical after a failed refresh.'
+        : 'the retrieved fleet is empty, so there is nothing to hand over.');
+    }
+
+    var threshold = parsed.ok ? parsed.value : null;
+    var view = FR.buildShortlist(state.records, el('review-type').value || 'ALL', threshold);
+    var label = FR.filterLabel(view.filter);
+    var html = '';
+    state.view = view;
+
+    if (state.historical) {
+      html += block('historical', 'Historical — not current',
+        'Drawn from the record retrieved at ' + stamp(state.retrievedAt) + '. A later refresh failed.');
+    }
+    if (threshold === null) {
+      html += block('info', 'Temperature rule inactive',
+        (parsed.code === 'REQUIRED' ? 'No review threshold entered' : 'The review threshold is invalid') +
+        ', so no temperature reason is applied. This shortlist is incomplete.');
+    }
+    html += '<p class="review__count"><strong>' + view.rows.length + ' of ' + view.matchingCount +
+            '</strong> matching platforms shortlisted for review · filter: ' + esc(label) +
+            ' · ' + state.records.length + ' in this retrieval</p>';
+    if (view.readingGaps) {
+      html += '<p class="review__gaps">◇ Missing readings: ' + view.readingGaps +
+              ' subsystem reading' + (view.readingGaps === 1 ? ' is' : 's are') +
+              ' unavailable or invalid. They are shortlisted for review, never treated as zero.</p>';
+    }
+    if (view.matchingCount === 0) {
+      html += block('empty', 'No platforms of this type',
+        'This retrieval holds no platform matching the filter “' + esc(label) + '”. Nothing is shortlisted.');
+    } else if (!view.rows.length) {
+      html += block('empty', 'Empty shortlist',
+        'No matching platform met a review rule. This is not evidence of readiness: revision C ' +
+        'carries no observation time and cannot show withheld faults.');
+    }
+    status.innerHTML = html;
+    list.innerHTML = view.rows.map(reviewRow).join('');
+    if (state.historical) { list.className += ' is-historical'; }
+    if (view.clear.length) {
+      clear.textContent = 'Not shortlisted — no review rule matched, which is not evidence of readiness: ' +
+        view.clear.map(function (row) {
+          return text(asRecord(row.record).platformId, '(no identifier published)');
+        }).join(', ');
+    }
+
+    if (state.historical) { return exportState('data is historical after a failed refresh.'); }
+    if (state.loading) { return exportState('a refresh is in progress.'); }
+    if (threshold === null) { return exportState('enter a valid review threshold first.'); }
+    if (!marking()) {
+      return exportState('the data owner has not yet approved the handling marking. ' +
+        'No handover file is produced until that wording is recorded on #12.');
+    }
+    exportState(null, view.rows.length
+      ? 'Exports the ' + view.rows.length + ' displayed row' + (view.rows.length === 1 ? '' : 's') +
+        ' with filter, threshold and retrieval context.'
+      : 'Exports an explicit empty shortlist with filter, threshold and retrieval context.');
+  }
+
+  function exportCsv() {
+    var view = state.view;
+    if (!view || el('review-export').disabled) { return; }
+    var csv = FR.buildCsv(view, { marking: marking(), retrievedAt: state.retrievedAt });
+    // The BOM lets spreadsheet tools read the °C sign as UTF-8.
+    var url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' }));
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'sys-4419-review-shortlist-' + view.filter.toLowerCase() + '-' +
+                    FR.formatRetrieval(state.retrievedAt).compact + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function load() {
+    if (state.loading) { return; }
+    state.loading = true;
+    if (!state.records) {
+      skeleton('tally', 1);
+      skeleton('measured', 3);
+    }
+    renderRetrieval();
+    renderReview();
+
+    fetch('/platforms', { headers: { Accept: 'application/json' } })
+      .then(function (response) {
+        if (!response.ok) { throw failureError('api'); }
+        return response.json().catch(function () { throw failureError('invalid'); });
+      })
+      .then(function (platforms) {
+        if (!Array.isArray(platforms)) { throw failureError('invalid'); }
+        state.records = platforms;
+        state.retrievedAt = new Date();
+        state.loading = false;
+        state.failure = null;
+        state.historical = null;
+        if (platforms.length === 0) {
+          notice('tally', 'empty', 'No platforms published',
+            'The service returned an empty fleet. Nothing is withheld and nothing is wrong ' +
+            'with this sheet — there is simply no platform on the interface to draw.');
+          el('measured').innerHTML = '';
+        } else {
+          renderTally(platforms);
+          renderMeasured(platforms);
+          document.body.classList.add('is-setting');
+        }
+        fillTypes();
+        renderRetrieval();
+        renderReview();
+      })
+      .catch(function (error) {
+        var kind = error && error.phmKind === 'invalid' ? 'invalid' : 'api';
+        state.loading = false;
+        if (state.records) {
+          state.historical = { failedAt: new Date(), kind: kind };
+        } else {
+          state.failure = kind;
+          notice('tally', 'error', FAILURE[kind].head, FAILURE[kind].body + retryButton());
+          el('measured').innerHTML = '';
+        }
+        renderRetrieval();
+        renderReview();
+      });
+  }
+
+  document.addEventListener('click', function (event) {
+    var target = event.target && event.target.closest
+      ? event.target.closest('[data-action="retry"]')
+      : null;
+    if (target) { load(); }
+  });
+  el('review-type').addEventListener('change', renderReview);
+  el('review-type').addEventListener('input', renderReview);
+  el('review-threshold').addEventListener('input', renderReview);
+  el('review-threshold').addEventListener('blur', function () {
+    state.touched = true;
+    renderReview();
+  });
+  el('review-export').addEventListener('click', exportCsv);
+
+  load();
 })();
 </script>
 </body>
