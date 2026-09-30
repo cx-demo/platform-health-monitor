@@ -12,8 +12,13 @@
 - docs/icd/ICD-PHM-002.md is a controlled interface document.
 - Any change to the public API payload is an interface change.
 - Interface changes require an ICD revision and a consumer impact statement.
-- Never modify tests/contract/ to accommodate a change. If a contract test
-  fails, treat it as an interface-change escalation, not a test defect.
+- Never weaken, skip or delete contract tests to make a change pass. A contract
+  test failure on an unrevised ICD is an interface-change escalation, not a
+  test defect.
+- When an ICD revision changes the payload, update tests/contract/ in the same
+  pull request to the new revision. Keep it at least as strict (exact field set
+  on every endpoint) and check it against the ICD so the two cannot drift.
+  Code-owner approval of both the ICD and the contract tests is required.
 
 ## Quality
 

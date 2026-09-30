@@ -40,9 +40,11 @@ can build against and that no single team may change unilaterally.
 
 ## Operating Context
 
-- FastAPI service; `GET /platforms` and `GET /platforms/{platform_id}` return summaries shaped by
-  `src/readiness_service.get_platform_summary`. OpenAPI is generated at `/openapi.json`, with
-  Swagger UI at `/docs` and ReDoc at `/redoc`.
+- FastAPI service with two surfaces. `GET /platforms` and `GET /platforms/{platform_id}` serve
+  ICD-PHM-002 revision C, shaped by `src/readiness_service.get_platform_summary`, with no
+  readiness fields; OpenAPI 2.3.0 is at `/openapi.json`, Swagger UI at `/docs`, ReDoc at `/redoc`.
+  `GET /v2/platforms` and `GET /v2/platforms/{platform_id}` serve revision D, shaped by
+  `src/readiness_service.summarise_v2`; OpenAPI 2.4.0 is at `/v2/openapi.json`.
 - The published summary is a deliberate **projection** of the internal model. `Subsystem` carries
   `mission_critical_fault` and `telemetry_age_seconds`; `get_platform_summary` omits both.
 - Change is governed. Work is traced by `SYS-NNNN` requirement IDs. Every pull request must carry
@@ -51,10 +53,16 @@ can build against and that no single team may change unilaterally.
   `main` is protected by an active ruleset; code ownership is split so that `/docs/icd/` and
   `/tests/contract/` sit with the interface-control board.
 - `tests/contract/test_icd_phm_002_compatibility.py` asserts the ICD-PHM-002 revision C field set
-  exactly. It is a governance instrument. Weakening or deleting it to make a build pass is the
-  defined wrong answer.
-- SYS-4412 is open: add a derived `readinessState` to the published contract. It is not
-  implemented, and implementing it requires ICD-PHM-002 to advance to revision D.
+  exactly on both `/platforms` endpoints and is unchanged by revision D.
+  `tests/contract/test_icd_phm_002_rev_d.py` asserts the revision D field set exactly on both `/v2`
+  endpoints and checks it against the ICD rev D platform record table. Both are governance
+  instruments. Weakening, skipping or deleting it to make a build pass is the defined
+  wrong answer; when an ICD revision changes the payload, it is updated to that revision in the
+  same pull request, at least as strictly, with code-owner approval of both.
+- SYS-4412 publishes derived `readinessState` (`FMC` / `PMC` / `NMC`) and `readinessConfidence`
+  (`HIGH` / `LOW`) under rule `SYS-4412-R1` on the `/v2` surface only. Consumers opt in by base
+  path. ICD-PHM-002 revision D is drafted and awaits Interface Control Board approval of both
+  the ICD and the contract tests.
 
 ## Capabilities and Constraints
 
@@ -66,21 +74,23 @@ can build against and that no single team may change unilaterally.
 
 **Constraints that bind any new work**
 
-- **The published contract may not grow.** Any surface built on PHMS reads only the ICD-PHM-002
-  revision C field set: `platformId`, `designation`, `platformType`, `operational`, and per
-  subsystem `subsystemId`, `name`, `temperatureCelsius`, `operational`. Introducing
-  `readinessState` anywhere in shipped source or tests destroys the scenario this repository
-  exists to stage.
+- **The published contract grows only by ICD revision.** Any surface built on PHMS reads only
+  a published revision's field set. The revision D (`/v2`) set is: `platformId`, `designation`, `platformType`,
+  `operational`, `readinessState`, `readinessConfidence`, and per subsystem `subsystemId`,
+  `name`, `temperatureCelsius`, `operational`. Rendering any other field, or any field before
+  its ICD revision exists, is forbidden.
 - Read-only. No control actions, no write paths, no tasking authority.
 - Test coverage on `src/` is gated at 90%. New Python needs matching tests.
 - No network fonts or third-party CDNs; the service must run air-gapped `[inferred]`.
 
-**Known contract gap, deliberately preserved**
+**Known contract gap, narrowed at revision D**
 
 `MSN-330` has a mission-critical fault on its prime power generator and comms telemetry one hour
-stale. Neither field is published, and the platform's own `operational` flag reads `true`. Any
-consumer honouring the contract will therefore report `MSN-330` as serviceable. This is the
-evidence for SYS-4412 and must remain visible, not corrected.
+stale. Neither field is published, and the platform's own `operational` flag reads `true`. At
+revision C (`/platforms`) any consumer honouring the contract will report `MSN-330` as
+serviceable. Revision D (`/v2/platforms`) publishes `readinessState: NMC` and
+`readinessConfidence: LOW` for it. The fault and the
+telemetry age remain unpublished, and that remaining gap stays visible.
 
 ## Brand Commitments
 
@@ -91,7 +101,7 @@ in `src/main.py`. Platform and subsystem identifiers are fixed vocabulary and ap
 
 - Real fleet data in `src/repository.py` — synthetic for demonstration, but it is the only fleet
   this product has, and it is authored, not placeholder.
-- Interface and architecture documents: `docs/icd/ICD-PHM-002.md` (revision C),
+- Interface and architecture documents: `docs/icd/ICD-PHM-002.md` (revision D draft),
   `docs/architecture.md`.
 - Engineering change request: `demo/sys-4412-issue.md`.
 

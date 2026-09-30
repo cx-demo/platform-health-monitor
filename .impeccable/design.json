@@ -34,7 +34,7 @@
       "kind": "card",
       "refersTo": "plate-frame",
       "description": "Ink-framed printed plate for each figure.",
-      "html": "<section class=\"ds-plate\"><div class=\"ds-plate-head\"><h2>Figure 1 · Fleet tally</h2><span>Serviceability as published</span></div><p>Every figure is read from GET /platforms.</p></section>",
+      "html": "<section class=\"ds-plate\"><div class=\"ds-plate-head\"><h2>Figure 1 · Fleet tally</h2><span>Serviceability as published</span></div><p>Every figure is read from GET /v2/platforms.</p></section>",
       "css": ".ds-plate{background:#f4f2ec;color:#16130f;border:1px solid #16130f;border-radius:0;padding:28px 28px 32px;font-family:Helvetica Neue,Helvetica,Arial,Liberation Sans,sans-serif}.ds-plate-head{display:flex;justify-content:space-between;gap:24px;align-items:baseline;margin-bottom:28px}.ds-plate h2{margin:0;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.14em}.ds-plate span{font:11px ui-monospace,SF Mono,SFMono-Regular,Menlo,Consolas,Liberation Mono,monospace;color:#55504a}.ds-plate p{margin:0;color:#55504a;font-size:15px;line-height:1.55}"
     },
     {
@@ -44,6 +44,13 @@
       "description": "Filled or outlined square plus text; never hue alone.",
       "html": "<p class=\"ds-status\"><span class=\"ds-mark ds-mark-filled\" aria-hidden=\"true\"></span>Reports operational</p>",
       "css": ".ds-status{display:flex;align-items:baseline;gap:10px;color:#16130f;font:12px/1.5 Helvetica Neue,Helvetica,Arial,Liberation Sans,sans-serif}.ds-mark{width:10px;height:10px;border:1.5px solid #16130f;transform:translateY(.8px);border-radius:0}.ds-mark-filled{background:#16130f}"
+    },
+    {
+      "name": "Readiness Text",
+      "kind": "custom",
+      "description": "Published readinessState and readinessConfidence (ICD-PHM-002 rev D, SYS-4412) as one line of neutral mono ink text under the platform identifier. No colour, mark, badge, lamp, icon or ranking; the plate repeats the service's verdict and never derives its own.",
+      "html": "<span class=\"ds-readiness\">Readiness NMC · confidence LOW</span>",
+      "css": ".ds-readiness{display:block;margin-top:2px;font:400 11px ui-monospace,SF Mono,SFMono-Regular,Menlo,Consolas,Liberation Mono,monospace;letter-spacing:.05em;color:#16130f}"
     },
     {
       "name": "Measured Bar",
@@ -77,7 +84,7 @@
   ],
   "narrative": {
     "northStar": "The Printed Engineering Plate",
-    "overview": "The shipped `GET /dashboard` surface is a read-only fleet plate, not an operations console. It belongs to the statistical-atlas data-graphic tradition: Otto Neurath and Gerd Arntz ISOTYPE for countable unit signs, Jacques Bertin for shared visual variables, and Edward Tufte for measured restraint. The world is paper, ink, rule, figure, and reserved absence.\n\nMode is **Operate**. Engineers scan published facts, compare three platforms on one shared scale, see the measured extremity, and also see the contract gap drawn as hatched reserved space. Interface absence is not hidden and not dramatised; it is dimensioned as an engineering fact.\n\nBinding constraints are law for this surface: it is read-only; it may render only fields published by ICD-PHM-002 revision C (`platformId`, `designation`, `platformType`, `operational`, and subsystem `subsystemId`, `name`, `temperatureCelsius`, `operational`); the forbidden contract-growth string `readinessState` must never appear in shipped source or tests; no third-party origins or webfonts; presentation routes such as `/` and `/dashboard` stay out of `/openapi.json`.",
+    "overview": "The shipped `GET /dashboard` surface is a read-only fleet plate, not an operations console. It belongs to the statistical-atlas data-graphic tradition: Otto Neurath and Gerd Arntz ISOTYPE for countable unit signs, Jacques Bertin for shared visual variables, and Edward Tufte for measured restraint. The world is paper, ink, rule, figure, and reserved absence.\n\nMode is **Operate**. Engineers scan published facts, compare three platforms on one shared scale, see the measured extremity, and also see the contract gap drawn as hatched reserved space. Interface absence is not hidden and not dramatised; it is dimensioned as an engineering fact.\n\nBinding constraints are law for this surface: it is read-only; it may render only fields published by ICD-PHM-002 revision D (`platformId`, `designation`, `platformType`, `operational`, `readinessState`, `readinessConfidence`, and subsystem `subsystemId`, `name`, `temperatureCelsius`, `operational`); `readinessState` and `readinessConfidence` are rendered as neutral text only; no third-party origins or webfonts; presentation routes such as `/` and `/dashboard` stay out of `/openapi.json` and `/v2/openapi.json`. Readiness is read from `/v2`; `/platforms` (revision C) carries none.",
     "keyCharacteristics": [
       "Light ground with printed plate, black ink, hairline rules, square corners.",
       "Figures, bars, marks, and hatched reserved voids instead of dashboard cards.",
@@ -94,15 +101,15 @@
       { "name": "No Shadow", "body": "Do not add box shadows to this surface. Use paper contrast, borders, and rules.", "section": "elevation" }
     ],
     "dos": [
-      "Do keep the surface read-only and sourced from `GET /platforms` plus links to published platform records.",
-      "Do render only ICD-PHM-002 revision C fields and preserve the visible contract gap.",
+      "Do keep the surface read-only and sourced from `GET /v2/platforms` (revision D) plus links to published `/v2` platform records.",
+      "Do render only ICD-PHM-002 revision D fields and preserve the visible contract gap for fields that remain unpublished.",
       "Do encode state as mark plus text; colour may reinforce measurements only.",
       "Do use system grotesque and platform mono stacks only.",
-      "Do keep presentation routes out of the generated interface contract; `/openapi.json` must remain machine-readable ICD-PHM-002, not UI navigation.",
-      "Do draw absence as hatched reserved space when a question is not answerable from revision C."
+      "Do keep presentation routes out of the generated interface contracts; `/openapi.json` and `/v2/openapi.json` must remain machine-readable ICD-PHM-002, not UI navigation.",
+      "Do draw absence as hatched reserved space when a question is not answerable from revision D."
     ],
     "donts": [
-      "Don't introduce the forbidden `readinessState` field into shipped source or tests, infer a readiness verdict, or publish any tasking conclusion.",
+      "Don't infer a readiness verdict of the plate's own, style `readinessState` or `readinessConfidence` with colour or badges, or publish any tasking conclusion.",
       "Don't use traffic lights, gauges, gauge rings, sparklines, vital-sign traces, ECG metaphors, lamps, severity badges, or red/amber/green status language.",
       "Don't re-propose the dark neon ops-centre dashboard; it was rejected as the category default and would imply live command authority the product does not have.",
       "Don't re-propose white SaaS analytics cards; they were rejected as the predictable opposite and would make the contract gap feel like business intelligence, not interface governance.",

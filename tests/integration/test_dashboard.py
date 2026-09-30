@@ -6,8 +6,10 @@ These tests hold three boundaries:
 
 1.  It is served and reachable.
 2.  It is NOT part of the controlled interface, so the generated OpenAPI
-    document still describes exactly the ICD-PHM-002 rev C surface.
-3.  It renders only fields the interface actually publishes. Internal
+    documents still describe exactly the ICD-PHM-002 rev C surface (root)
+    and the rev D surface (/v2).
+3.  It renders only fields the interface it reads (/v2, rev D, SYS-4412)
+    actually publishes. Internal
     subsystem state is derived from the model at run time rather than
     written out here, so this assertion keeps working if the model grows
     and never restates an internal field name in the test suite.
@@ -19,7 +21,7 @@ from fastapi.testclient import TestClient
 
 from src.main import STATIC_DIR, app
 from src.models import Platform, Subsystem
-from src.readiness_service import get_platform_summary
+from src.readiness_service import summarise_v2
 from src.repository import list_platforms
 
 client = TestClient(app)
@@ -33,7 +35,7 @@ def _camel(snake: str) -> str:
 
 
 def _published_field_names() -> set[str]:
-    summary = get_platform_summary(list_platforms()[0])
+    summary = summarise_v2(list_platforms()[0])
     names = set(summary)
     for subsystem in summary["subsystems"]:
         names |= set(subsystem)
@@ -67,6 +69,12 @@ def test_dashboard_is_not_part_of_the_published_interface():
     assert set(document["paths"]) == {"/platforms", "/platforms/{platform_id}"}
 
 
+def test_dashboard_is_not_part_of_the_v2_interface():
+    document = client.get("/v2/openapi.json").json()
+
+    assert set(document["paths"]) == {"/platforms", "/platforms/{platform_id}"}
+
+
 def test_dashboard_renders_only_published_fields():
     markup = DASHBOARD.read_text(encoding="utf-8")
     internal_only = _internal_only_field_names()
@@ -92,3 +100,21 @@ def test_dashboard_requests_no_third_party_origin():
     assert 'src="http' not in markup
     assert 'href="http' not in markup
     assert "@import" not in markup
+
+
+def test_dashboard_reads_the_v2_surface_only():
+    markup = DASHBOARD.read_text(encoding="utf-8")
+
+    assert "fetch('/v2/platforms'" in markup
+    assert "href=\"/v2/platforms/'" in markup
+    assert "fetch('/platforms'" not in markup
+    assert "href=\"/platforms/" not in markup
+
+
+def test_dashboard_renders_readiness_as_neutral_text():
+    markup = DASHBOARD.read_text(encoding="utf-8")
+    rule = markup.split(".row__readiness {", 1)[1].split("}", 1)[0]
+
+    assert "color: var(--ink);" in rule
+    for styled in ("background", "border", "--warn", "--alert", "red", "amber", "green"):
+        assert styled not in rule
